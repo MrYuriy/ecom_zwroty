@@ -1,0 +1,840 @@
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f8f9fb;
+  --border: #dfe2e7;
+  --text: #1c2129;
+  --muted: #5f6b7a;
+  --primary: #1f5fbf;
+  --primary-hover: #184d9c;
+  --primary-soft: #e6eefb;
+  --danger: #c0352b;
+  --danger-soft: #fbe9e7;
+  --success: #1f7a45;
+  --success-soft: #e5f4ea;
+  --warning-soft: #fff4dc;
+  --focus: 0 0 0 3px rgba(31, 95, 191, 0.3);
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151a;
+    --surface: #1b1f26;
+    --surface-2: #222731;
+    --border: #323946;
+    --text: #e6e9ee;
+    --muted: #9aa5b4;
+    --primary: #5b95ec;
+    --primary-hover: #7aaaf1;
+    --primary-soft: #1d2b42;
+    --danger: #ef6b61;
+    --danger-soft: #3a1f1d;
+    --success: #5cc48a;
+    --success-soft: #16301f;
+    --warning-soft: #3a3120;
+    --focus: 0 0 0 3px rgba(91, 149, 236, 0.4);
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a {
+  color: var(--primary);
+}
+
+h1 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* ---------- top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.topbar .brand {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  margin-right: 8px;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.topbar nav a {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.topbar nav a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.topbar nav a.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.topbar .user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* ---------- surfaces ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* ---------- forms ---------- */
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-height: 40px;
+  width: 100%;
+}
+
+textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: var(--primary);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.form-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+  min-height: 40px;
+}
+
+.check input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+}
+
+/* Segmented radio buttons: big targets for a tablet. */
+.segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.segmented label {
+  flex: 1;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.95rem;
+  background: var(--surface);
+}
+
+.segmented label + label {
+  border-left: 1px solid var(--border);
+}
+
+.segmented label {
+  position: relative;
+}
+
+/* The radio stays focusable but takes no space (the generic input width: 100% would overflow the page). */
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.segmented label:has(input:checked) {
+  background: var(--primary);
+  color: #fff;
+}
+
+.segmented label:has(input:focus-visible) {
+  box-shadow: inset var(--focus);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ---------- buttons ---------- */
+button,
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  min-height: 40px;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+button:hover,
+.btn:hover {
+  background: var(--primary-hover);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+button.secondary:hover {
+  background: var(--surface-2);
+}
+
+button.danger {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--border);
+}
+
+button.danger:hover {
+  background: var(--danger-soft);
+}
+
+button.small,
+.btn.small {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+/* ---------- tables → cards on narrow screens ---------- */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+
+tbody tr.clickable {
+  cursor: pointer;
+}
+
+tbody tr.clickable:hover {
+  background: var(--surface-2);
+}
+
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+td.actions-cell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 32px 12px;
+}
+
+@media (max-width: 960px) {
+  .topbar {
+    padding: 10px 12px;
+  }
+
+  main {
+    padding: 12px 10px 40px;
+  }
+
+  table.responsive thead {
+    display: none;
+  }
+
+  table.responsive,
+  table.responsive tbody,
+  table.responsive tr,
+  table.responsive td {
+    display: block;
+    width: 100%;
+  }
+
+  table.responsive tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    background: var(--surface);
+    padding: 4px 0;
+  }
+
+  table.responsive td {
+    border: none;
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: right;
+  }
+
+  table.responsive td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: left;
+  }
+
+  table.responsive td.actions-cell::before {
+    content: none;
+  }
+
+  table.responsive td.actions-cell {
+    justify-content: flex-end;
+  }
+
+  .card {
+    padding: 12px;
+  }
+}
+
+/* ---------- badges ---------- */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.badge.neutral {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* ---------- messages ---------- */
+.notice {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-size: 0.92rem;
+}
+
+.notice.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.notice.info {
+  background: var(--warning-soft);
+  color: var(--text);
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 50;
+  max-width: calc(100vw - 32px);
+}
+
+#toast.error {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------- pagination ---------- */
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ---------- login ---------- */
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-card form {
+  display: grid;
+  gap: 12px;
+}
+
+/* ---------- order screen ---------- */
+.scan-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.scan-row input {
+  font-size: 1.2rem;
+  min-height: 48px;
+  letter-spacing: 0.02em;
+}
+
+.scan-row button {
+  min-height: 48px;
+}
+
+.sku-found {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--success-soft);
+  margin: 12px 0;
+}
+
+.sku-found strong {
+  font-size: 1.05rem;
+}
+
+/* ---------- page parts ---------- */
+.back {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.btn.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn.secondary:hover {
+  background: var(--surface-2);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.summary dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.summary dd {
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.form-card {
+  max-width: 720px;
+}
+
+.notice p {
+  margin: 0 0 8px;
+}
+
+/* ---------- line photos ---------- */
+.thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.thumbs.small .thumb {
+  width: 44px;
+  height: 44px;
+}
+
+.thumb img,
+.thumb .thumb-missing {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  display: block;
+}
+
+.thumb .thumb-missing {
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.thumb-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.thumb-delete:hover {
+  background: var(--danger);
+  filter: brightness(1.1);
+}
+
+.photo-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.photo-picker input[type="file"] {
+  padding: 6px;
+}
+
+.pending-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Hidden from view but still focusable, so the camera tile works from the keyboard too. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.photo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Existing and pending photos sit in one row with the camera tile. */
+.photo-strip .thumbs {
+  display: contents;
+}
+
+.photo-strip .thumb {
+  width: 84px;
+  height: 84px;
+}
+
+.camera-tile {
+  width: 84px;
+  height: 84px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.camera-tile:hover {
+  border-color: var(--primary);
+}
+
+.camera-tile:focus-within {
+  box-shadow: var(--focus);
+  border-color: var(--primary);
+}
+
+.gallery-link {
+  display: inline-block;
+  width: fit-content;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.gallery-link:focus-within {
+  box-shadow: var(--focus);
+  border-radius: 4px;
+}
+
+/* Form pages: one centered column, so the heading and its buttons sit right above the form. */
+main.narrow {
+  max-width: 752px;
+}
+
+main.narrow .form-card {
+  max-width: none;
+}
+
+main.narrow .page-head {
+  align-items: flex-end;
+}
+
+.page-head p {
+  margin: 4px 0 0;
+}
+
+/* ---------- line photo viewer ---------- */
+.viewer {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 240px;
+  overflow: hidden;
+}
+
+.viewer img {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+}
+
+.viewer-counter {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+.viewer-counter:empty {
+  display: none;
+}
+
+.viewer-strip {
+  margin-top: 12px;
+}
+
+.strip-item {
+  padding: 0;
+  min-height: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.strip-item:hover {
+  background: none;
+  border-color: var(--border);
+}
+
+.strip-item.selected {
+  border-color: var(--primary);
+}
+
+/* Table cell: one cover photo with a count badge. */
+.thumb.cover {
+  width: 48px;
+  height: 48px;
+}
+
+.thumb-count {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface);
+}
