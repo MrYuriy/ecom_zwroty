@@ -26,14 +26,26 @@ New feature = one vertical: `model → migration → repository → schema → s
 - No public registration — an ADMIN creates operators (`python -m app.scripts.create_admin` for the first admin).
 
 ## DB migrations
-`00001` users · `00002` sku_registry · `00003` return_orders + order_lines. Hand-written,
+`00001` users · `00002` sku_registry · `00003` return_orders + order_lines · `00004` line_images. Hand-written,
 `down_revision` = previous, run on container start (`entrypoint.sh`).
 
 ## Tests
 sqlite in-memory (`tests/conftest.py`, add new tables to `TEST_TABLES`); `admin_headers` /
 `operator_headers` fixtures log in through the API.
 
+## Line images
+Files live in `UPLOADS_DIR` (a docker volume at `/data/uploads`; `uploads/` locally, gitignored), named by
+the server. Type is checked from magic bytes (JPEG/PNG/WebP), size/count limits in `core/config/storage.py`.
+`GET /api/images/{uuid}` needs the bearer token, so the cabinet shows photos from blob URLs.
+Deleting a line or a return deletes its files after the DB commit.
+
+## Frontend
+Static multi-page cabinet in `frontend/`, served at `/app` (`app/cabinet.py`): HTML is `no-cache`,
+JS/CSS get `?v=<mtime>`. One responsibility per page: `returns` (list) · `return-form` (header) ·
+`return` (view) · `line` (scan → line + photos) · `line-view` (line + full-size photos) ·
+`skus`/`sku-form` · `users`/`user-form`.
+Polish UI; DOM built with `h()` (textContent only). Tables turn into cards below 960px.
+Dev data: `uv run python -m app.scripts.seed_demo` (includes the sample report rows).
+
 ## Roadmap
-1. Line images (local docker volume)
-2. Report export (row builder + writer; xlsx now, Google Sheets later; Celery)
-3. Frontend (static `frontend/` served at `/app`)
+1. Report export (row builder + writer; xlsx now, Google Sheets later; Celery)
