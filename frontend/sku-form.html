@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Produkt — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main class="narrow">
+      <a id="back" class="back" href="skus.html">‹ Produkty</a>
+      <div class="page-head">
+        <h1 id="title">Nowy produkt</h1>
+      </div>
+
+      <section class="card form-card">
+        <form id="sku-form" class="form-grid">
+          <label>
+            Referencja handlowa (SKU)
+            <input name="trade_reference" maxlength="64" required />
+          </label>
+          <label>
+            EAN
+            <input name="ean" maxlength="32" inputmode="numeric" />
+          </label>
+          <label class="wide">
+            Nazwa produktu
+            <input name="product_name" maxlength="500" required />
+          </label>
+          <label class="check wide">
+            <input type="checkbox" name="is_parametrized" />
+            Produkt sparametryzowany
+          </label>
+          <div class="actions wide">
+            <button type="submit" id="submit">Zapisz</button>
+            <a id="cancel" class="btn secondary" href="skus.html">Anuluj</a>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="sku-form.js?v=dev"></script>
+  </body>
+</html>
