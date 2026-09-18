@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, Enum, Integer, String
+from sqlalchemy.orm import relationship
 
 from app.enums.user import RoleEnum
 from app.models.base import Base, TimestampMixin
@@ -13,3 +14,5 @@ class User(Base, TimestampMixin):
     full_name = Column(String(255), nullable=False)
     role = Column(Enum(RoleEnum, name="role_enum"), nullable=False, default=RoleEnum.OPERATOR)
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+
+    return_orders = relationship("ReturnOrder", back_populates="operator")

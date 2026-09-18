@@ -12,12 +12,14 @@ from app.core.security.password import hash_password  # noqa: E402
 from app.database.postgres import get_session  # noqa: E402
 from app.enums.user import RoleEnum  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import Base, Sku, User  # noqa: E402
+from app.models import Base, OrderLine, ReturnOrder, Sku, User  # noqa: E402
 
 # Order matters for FKs.
 TEST_TABLES = [
     User.__table__,
     Sku.__table__,
+    ReturnOrder.__table__,
+    OrderLine.__table__,
 ]
 
 PASSWORD = "Str0ng-pass"
