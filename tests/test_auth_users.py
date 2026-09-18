@@ -34,6 +34,14 @@ async def test_any_password_is_accepted(client, admin_headers):
         assert login.status_code == 200
 
 
+async def test_admin_gets_single_user(client, admin_headers):
+    me = (await client.get("/api/auth/me", headers=admin_headers)).json()
+    response = await client.get(f"/api/users/{me['id']}", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["email"] == "admin@example.com"
+    assert (await client.get("/api/users/9999", headers=admin_headers)).status_code == 404
+
+
 async def test_operator_cannot_manage_users(client, operator_headers):
     payload = {"email": "x@example.com", "password": PASSWORD, "full_name": "X"}
     assert (await client.post("/api/users", json=payload, headers=operator_headers)).status_code == 403

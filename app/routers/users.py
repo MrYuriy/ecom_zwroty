@@ -22,6 +22,11 @@ async def list_users(
     return await service.list_users(page, limit)
 
 
+@router.get("/{user_id}", response_model=UserOut)
+async def get_user(user_id: int, service: UserServiceDep, _: AdminUserDep) -> UserOut:
+    return await service.get_user(user_id)
+
+
 @router.patch("/{user_id}", response_model=UserOut)
 async def update_user(user_id: int, data: UserUpdate, service: UserServiceDep, admin: AdminUserDep) -> UserOut:
     return await service.update_user(user_id, data, acting_user_id=admin.id)

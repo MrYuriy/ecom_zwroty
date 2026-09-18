@@ -30,6 +30,12 @@ class UserService:
         users, total = await self.users.get_many(page=page, limit=limit, order_by=[self.users.model.full_name])
         return Page(items=[UserOut.model_validate(u) for u in users], total=total, page=page, limit=limit)
 
+    async def get_user(self, user_id: int) -> UserOut:
+        user = await self.users.get_one(id=user_id)
+        if not user:
+            raise ObjectNotFoundException(user_id, "User")
+        return UserOut.model_validate(user)
+
     async def update_user(self, user_id: int, data: UserUpdate, acting_user_id: int) -> UserOut:
         user = await self.users.get_one(id=user_id)
         if not user:
