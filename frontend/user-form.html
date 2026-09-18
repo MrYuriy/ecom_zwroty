@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Użytkownik — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main class="narrow">
+      <a class="back" href="users.html">‹ Użytkownicy</a>
+      <div class="page-head">
+        <h1 id="title">Nowy użytkownik</h1>
+      </div>
+
+      <section class="card form-card">
+        <form id="user-form" class="form-grid">
+          <label>
+            Imię i nazwisko
+            <input name="full_name" maxlength="255" required />
+          </label>
+          <label>
+            E-mail
+            <input name="email" type="email" required />
+          </label>
+          <label>
+            Rola
+            <select name="role">
+              <option value="OPERATOR">Operator</option>
+              <option value="SUPERVISOR">Kierownik</option>
+              <option value="ADMIN">Administrator</option>
+            </select>
+          </label>
+          <label>
+            <span id="password-label">Hasło</span>
+            <input name="password" type="password" autocomplete="new-password" />
+          </label>
+          <label class="check wide hidden" id="active-field">
+            <input type="checkbox" name="is_active" />
+            Aktywny
+          </label>
+          <p id="self-note" class="muted wide hidden">Nie możesz zmienić własnej roli ani się dezaktywować.</p>
+          <div class="actions wide">
+            <button type="submit" id="submit">Zapisz</button>
+            <a class="btn secondary" href="users.html">Anuluj</a>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="user-form.js?v=dev"></script>
+  </body>
+</html>
