@@ -1,7 +1,7 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, File, Query, Response, UploadFile
 
 from app.dependencies import CurrentUserDep, ReturnOrderServiceDep
 from app.schemas.common import Page
@@ -77,3 +77,21 @@ async def delete_line(
     order_uuid: UUID, line_uuid: UUID, service: ReturnOrderServiceDep, _: CurrentUserDep
 ) -> ReturnOrderOut:
     return await service.delete_line(order_uuid, line_uuid)
+
+
+@router.post("/{order_uuid}/lines/{line_uuid}/images", response_model=ReturnOrderOut, status_code=201)
+async def upload_line_images(
+    order_uuid: UUID,
+    line_uuid: UUID,
+    service: ReturnOrderServiceDep,
+    _: CurrentUserDep,
+    files: list[UploadFile] = File(...),
+) -> ReturnOrderOut:
+    return await service.add_images(order_uuid, line_uuid, files)
+
+
+@router.delete("/{order_uuid}/lines/{line_uuid}/images/{image_uuid}", response_model=ReturnOrderOut)
+async def delete_line_image(
+    order_uuid: UUID, line_uuid: UUID, image_uuid: UUID, service: ReturnOrderServiceDep, _: CurrentUserDep
+) -> ReturnOrderOut:
+    return await service.delete_image(order_uuid, line_uuid, image_uuid)

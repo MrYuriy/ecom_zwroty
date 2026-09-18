@@ -3,16 +3,18 @@ import os
 # Settings require DATABASE_URL at import; tests never touch a real database.
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite://")
 
+import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
+from app.core import settings  # noqa: E402
 from app.core.security.password import hash_password  # noqa: E402
 from app.database.postgres import get_session  # noqa: E402
 from app.enums.user import RoleEnum  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import Base, OrderLine, ReturnOrder, Sku, User  # noqa: E402
+from app.models import Base, LineImage, OrderLine, ReturnOrder, Sku, User  # noqa: E402
 
 # Order matters for FKs.
 TEST_TABLES = [
@@ -20,9 +22,18 @@ TEST_TABLES = [
     Sku.__table__,
     ReturnOrder.__table__,
     OrderLine.__table__,
+    LineImage.__table__,
 ]
 
 PASSWORD = "Str0ng-pass"
+
+
+@pytest.fixture(autouse=True)
+def uploads_dir(tmp_path, monkeypatch):
+    # Uploaded images land in a per-test temp dir, never in the real uploads folder.
+    path = tmp_path / "uploads"
+    monkeypatch.setattr(settings.storage, "UPLOADS_DIR", str(path))
+    return path
 
 
 @pytest_asyncio.fixture

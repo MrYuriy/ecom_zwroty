@@ -5,8 +5,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.line_image import LineImage
 from app.models.return_order import OrderLine, ReturnOrder
 from app.repositories.base import BaseRepository
+
+# Everything a return is serialized with, loaded up front (async sessions can't lazy-load).
+_WITH_LINES = selectinload(ReturnOrder.lines).options(selectinload(OrderLine.sku), selectinload(OrderLine.images))
 
 
 class ReturnOrderRepository(BaseRepository[ReturnOrder]):
@@ -14,11 +18,7 @@ class ReturnOrderRepository(BaseRepository[ReturnOrder]):
         super().__init__(session, ReturnOrder)
 
     async def get_with_lines(self, order_uuid: UUID) -> ReturnOrder | None:
-        query = (
-            select(ReturnOrder)
-            .where(ReturnOrder.uuid == order_uuid)
-            .options(selectinload(ReturnOrder.lines).selectinload(OrderLine.sku))
-        )
+        query = select(ReturnOrder).where(ReturnOrder.uuid == order_uuid).options(_WITH_LINES)
         return (await self.session.execute(query)).scalar_one_or_none()
 
     async def search(
@@ -41,7 +41,7 @@ class ReturnOrderRepository(BaseRepository[ReturnOrder]):
         rows_query = (
             select(ReturnOrder)
             .where(*conditions)
-            .options(selectinload(ReturnOrder.lines).selectinload(OrderLine.sku))
+            .options(_WITH_LINES)
             .order_by(ReturnOrder.return_date.desc(), ReturnOrder.created_at.desc())
             .offset((page - 1) * limit)
             .limit(limit)
@@ -56,3 +56,24 @@ class ReturnOrderRepository(BaseRepository[ReturnOrder]):
 class OrderLineRepository(BaseRepository[OrderLine]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, OrderLine)
+
+
+class LineImageRepository(BaseRepository[LineImage]):
+    def __init__(self, session: AsyncSession) -> None:
+        super().__init__(session, LineImage)
+
+    async def file_names_for_order(self, order_uuid: UUID) -> list[str]:
+        query = (
+            select(LineImage.file_name)
+            .join(OrderLine, OrderLine.uuid == LineImage.order_line_uuid)
+            .where(OrderLine.return_order_uuid == order_uuid)
+        )
+        return list((await self.session.execute(query)).scalars().all())
+
+    async def file_names_for_line(self, line_uuid: UUID) -> list[str]:
+        query = select(LineImage.file_name).where(LineImage.order_line_uuid == line_uuid)
+        return list((await self.session.execute(query)).scalars().all())
+
+    async def count_for_line(self, line_uuid: UUID) -> int:
+        query = select(func.count()).select_from(LineImage).where(LineImage.order_line_uuid == line_uuid)
+        return (await self.session.execute(query)).scalar() or 0

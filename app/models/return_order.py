@@ -41,3 +41,9 @@ class OrderLine(Base, UUIDMixin, CreatedAtMixin):
 
     return_order = relationship("ReturnOrder", back_populates="lines")
     sku = relationship("Sku")
+    images = relationship(
+        "LineImage",
+        back_populates="line",
+        cascade="all, delete-orphan",
+        order_by="LineImage.created_at",
+    )

@@ -1,13 +1,16 @@
 from datetime import date
+from pathlib import Path
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exc import ObjectNotFoundException
+from app.core import settings
+from app.core.exc import BadRequestException, ObjectNotFoundException
 from app.database.postgres import get_session
+from app.models.line_image import LineImage
 from app.models.return_order import OrderLine, ReturnOrder
-from app.repositories.return_order import OrderLineRepository, ReturnOrderRepository
+from app.repositories.return_order import LineImageRepository, OrderLineRepository, ReturnOrderRepository
 from app.repositories.sku import SkuRepository
 from app.schemas.common import Page
 from app.schemas.return_order import (
@@ -17,15 +20,19 @@ from app.schemas.return_order import (
     ReturnOrderOut,
     ReturnOrderUpdate,
 )
+from app.services.image_storage import ImageStorage, detect_image_type
 
 _CLEARABLE_LINE_FIELDS = {"damage_description", "remarks"}
 
 
 class ReturnOrderService:
     def __init__(self, session: AsyncSession) -> None:
+        self.session = session
         self.orders = ReturnOrderRepository(session)
         self.lines = OrderLineRepository(session)
+        self.images = LineImageRepository(session)
         self.skus = SkuRepository(session)
+        self.storage = ImageStorage()
 
     async def _get_order(self, order_uuid: UUID) -> ReturnOrder:
         order = await self.orders.get_one(uuid=order_uuid)
@@ -80,7 +87,11 @@ class ReturnOrderService:
         return await self._reload(order_uuid)
 
     async def delete_order(self, order_uuid: UUID) -> None:
-        await self.orders.delete_one(await self._get_order(order_uuid))
+        order = await self._get_order(order_uuid)
+        file_names = await self.images.file_names_for_order(order_uuid)
+        await self.orders.delete_one(order)
+        # Files go only after the rows are gone, so a failed delete never leaves rows pointing at nothing.
+        await self.storage.delete(file_names)
 
     async def add_line(self, order_uuid: UUID, data: OrderLineCreate) -> ReturnOrderOut:
         await self._get_order(order_uuid)
@@ -102,8 +113,71 @@ class ReturnOrderService:
         return await self._reload(order_uuid)
 
     async def delete_line(self, order_uuid: UUID, line_uuid: UUID) -> ReturnOrderOut:
-        await self.lines.delete_one(await self._get_line(order_uuid, line_uuid))
+        line = await self._get_line(order_uuid, line_uuid)
+        file_names = await self.images.file_names_for_line(line_uuid)
+        await self.lines.delete_one(line)
+        await self.storage.delete(file_names)
         return await self._reload(order_uuid)
+
+    # ---------- line images ----------
+
+    async def _read_image(self, upload: UploadFile) -> tuple[bytes, str]:
+        max_bytes = settings.storage.MAX_IMAGE_MB * 1024 * 1024
+        data = await upload.read(max_bytes + 1)
+        name = upload.filename or "plik"
+        if len(data) > max_bytes:
+            raise BadRequestException(f"{name}: file is larger than {settings.storage.MAX_IMAGE_MB} MB")
+        content_type = detect_image_type(data[:16])
+        if content_type is None:
+            raise BadRequestException(f"{name}: only JPEG, PNG and WebP images are accepted")
+        return data, content_type
+
+    async def add_images(self, order_uuid: UUID, line_uuid: UUID, uploads: list[UploadFile]) -> ReturnOrderOut:
+        await self._get_line(order_uuid, line_uuid)
+        if not uploads:
+            raise BadRequestException("No files were sent")
+        existing = await self.images.count_for_line(line_uuid)
+        if existing + len(uploads) > settings.storage.MAX_IMAGES_PER_LINE:
+            raise BadRequestException(f"A line can have at most {settings.storage.MAX_IMAGES_PER_LINE} images")
+
+        # Validate every file before writing any, so one bad file doesn't leave half an upload behind.
+        images = [await self._read_image(upload) for upload in uploads]
+        saved: list[str] = []
+        try:
+            for data, content_type in images:
+                file_name = await self.storage.save(data, content_type)
+                saved.append(file_name)
+                self.session.add(
+                    LineImage(
+                        order_line_uuid=line_uuid,
+                        file_name=file_name,
+                        content_type=content_type,
+                        size_bytes=len(data),
+                    )
+                )
+            await self.session.commit()
+        except BaseException:
+            await self.session.rollback()
+            await self.storage.delete(saved)
+            raise
+        return await self._reload(order_uuid)
+
+    async def delete_image(self, order_uuid: UUID, line_uuid: UUID, image_uuid: UUID) -> ReturnOrderOut:
+        await self._get_line(order_uuid, line_uuid)
+        image = await self.images.get_one(uuid=image_uuid, order_line_uuid=line_uuid)
+        if not image:
+            raise ObjectNotFoundException(image_uuid, "Image")
+        file_name = image.file_name
+        await self.images.delete_one(image)
+        await self.storage.delete([file_name])
+        return await self._reload(order_uuid)
+
+    async def get_image_file(self, image_uuid: UUID) -> tuple[Path, str]:
+        image = await self.images.get_one(uuid=image_uuid)
+        path = self.storage.path_of(image.file_name) if image else None
+        if not image or not path.is_file():
+            raise ObjectNotFoundException(image_uuid, "Image")
+        return path, image.content_type
 
 
 def get_return_order_service(session: AsyncSession = Depends(get_session)) -> ReturnOrderService:

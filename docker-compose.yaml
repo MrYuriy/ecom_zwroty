@@ -8,6 +8,10 @@ services:
     env_file: [.env]
     ports:
       - "${PORT}:${PORT}"
+    environment:
+      UPLOADS_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       db: { condition: service_healthy }
     restart: unless-stopped
@@ -30,3 +34,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

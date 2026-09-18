@@ -37,11 +37,21 @@ class OrderLineUpdate(BaseModel):
     remarks: str | None = None
 
 
+class LineImageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: UUID
+    content_type: str
+    size_bytes: int
+    created_at: datetime
+
+
 class OrderLineOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     uuid: UUID
     sku: SkuOut
+    images: list[LineImageOut]
     quantity: int
     carrier_type: CarrierType
     goods_condition: GoodsCondition

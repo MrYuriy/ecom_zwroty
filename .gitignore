@@ -21,3 +21,6 @@ htmlcov/
 *.sqlite
 *.sqlite3
 .mypy_cache/
+
+# Uploaded line photos (local dev)
+/uploads/
