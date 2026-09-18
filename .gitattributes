@@ -1,0 +1,2 @@
+# Files that end up in the Linux image must keep LF, whatever core.autocrlf says on Windows.
+*.sh text eol=lf
