@@ -1,0 +1,32 @@
+---
+services:
+  app:
+    build:
+      context: .
+    image: ecom-zwroty-app
+    container_name: ecom-zwroty-api
+    env_file: [.env]
+    ports:
+      - "${PORT}:${PORT}"
+    depends_on:
+      db: { condition: service_healthy }
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    container_name: ecom-zwroty-db
+    env_file: [.env]
+    # Localhost only: lets `uv run uvicorn` on the host reach the DB without exposing it to the network.
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
