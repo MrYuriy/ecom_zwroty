@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zwrot — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main>
+      <a class="back" href="returns.html">‹ Wszystkie zwroty</a>
+      <div class="page-head">
+        <h1 id="title">Zwrot</h1>
+        <div class="actions">
+          <a id="add-line" class="btn" href="#">+ Dodaj pozycję</a>
+          <a id="edit-header" class="btn secondary" href="#">Edytuj nagłówek</a>
+          <a class="btn secondary" href="return-form.html">+ Nowy zwrot</a>
+          <button id="delete-order" type="button" class="danger">Usuń zwrot</button>
+        </div>
+      </div>
+
+      <section class="card">
+        <dl class="summary">
+          <div><dt>Data zwrotu</dt><dd id="s-date">—</dd></div>
+          <div><dt>Numer BO/WMS</dt><dd id="s-bo">—</dd></div>
+          <div><dt>Numer Tempo</dt><dd id="s-tempo">—</dd></div>
+          <div><dt>Pozycje</dt><dd id="s-lines">—</dd></div>
+          <div><dt>Sztuk</dt><dd id="s-pieces">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Pozycje</h2>
+        <div class="table-wrap">
+          <table class="responsive">
+            <thead>
+              <tr>
+                <th>Referencja</th>
+                <th>Produkt</th>
+                <th>Param.</th>
+                <th>Ilość</th>
+                <th>Nośnik</th>
+                <th>Klasyfikacja</th>
+                <th>Opis uszkodzenia</th>
+                <th>Uwagi</th>
+                <th>Zdjęcia</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="lines"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="return.js?v=dev"></script>
+  </body>
+</html>

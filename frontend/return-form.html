@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zwrot — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main class="narrow">
+      <a id="back" class="back" href="returns.html">‹ Wszystkie zwroty</a>
+      <div class="page-head">
+        <h1 id="title">Nowy zwrot</h1>
+      </div>
+
+      <section class="card form-card">
+        <form id="order-form" class="form-grid">
+          <label>
+            Numer BO/WMS
+            <input name="bo_wms_number" maxlength="64" placeholder="puste = brak" autofocus />
+          </label>
+          <label>
+            Numer Tempo
+            <input name="tempo_number" maxlength="64" placeholder="puste = brak" />
+          </label>
+          <label>
+            Data zwrotu
+            <input name="return_date" type="date" required />
+          </label>
+          <div class="actions wide">
+            <button type="submit" id="submit">Utwórz i dodaj pozycje</button>
+            <a id="cancel" class="btn secondary" href="returns.html">Anuluj</a>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="return-form.js?v=dev"></script>
+  </body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pozycja — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main class="narrow">
+      <a id="back" class="back" href="returns.html">‹ Wróć do zwrotu</a>
+      <div class="page-head">
+        <div>
+          <h1 id="title">Dodaj pozycję</h1>
+          <p id="order-ref" class="muted"></p>
+        </div>
+        <div class="actions">
+          <a id="finish" class="btn secondary" href="returns.html">Zakończ</a>
+          <a id="next-order" class="btn secondary" href="return-form.html">Następny zwrot</a>
+        </div>
+      </div>
+
+      <section id="scan-step" class="card form-card">
+        <form id="scan-form" class="scan-row">
+          <input
+            id="scan-input"
+            name="code"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Zeskanuj lub wpisz EAN / referencję"
+            aria-label="EAN lub referencja handlowa"
+          />
+          <button type="submit">Szukaj</button>
+        </form>
+        <div id="not-found" class="notice info hidden" role="status">
+          <p id="not-found-text"></p>
+          <a id="create-sku" class="btn" href="#">Dodaj nowy produkt</a>
+        </div>
+        <p id="session-info" class="muted"></p>
+      </section>
+
+      <section id="line-step" class="card form-card hidden">
+        <div id="line-sku" class="sku-found"></div>
+        <form id="line-form" class="form-grid">
+          <label>
+            Ilość
+            <input name="quantity" type="number" min="1" step="1" value="1" required />
+          </label>
+          <div>
+            <span class="muted" id="carrier-label">Nośnik</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="carrier-label">
+              <label><input type="radio" name="carrier_type" value="PARCEL" checked />paczka</label>
+              <label><input type="radio" name="carrier_type" value="PALLET" />paleta</label>
+            </div>
+          </div>
+          <div class="wide">
+            <span class="muted" id="condition-label">Klasyfikacja towaru</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="condition-label">
+              <label><input type="radio" name="goods_condition" value="FULL_VALUE" checked />pełnowartościowy</label>
+              <label><input type="radio" name="goods_condition" value="DAMAGED" />uszkodzony</label>
+            </div>
+          </div>
+          <label class="wide">
+            Opis uszkodzenia
+            <input name="damage_description" placeholder="np. rogi, pęknięte, porysowane" />
+          </label>
+          <label class="wide">
+            Uwagi
+            <input name="remarks" placeholder="np. etykieta na @, odstąpienie na @" />
+          </label>
+          <div class="wide photo-picker">
+            <span class="muted">Zdjęcia</span>
+            <div class="photo-strip">
+              <div id="existing-images" class="thumbs"></div>
+              <div id="pending-images" class="thumbs"></div>
+              <!-- capture opens the rear camera on phones; on a desktop it is an ordinary file dialog. -->
+              <label class="camera-tile" title="Zrób zdjęcie">
+                <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+                  <circle cx="12" cy="13.5" r="4" />
+                </svg>
+                <span>Zrób zdjęcie</span>
+                <input
+                  id="camera-input"
+                  class="visually-hidden"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                />
+              </label>
+            </div>
+            <label class="gallery-link">
+              lub wybierz z galerii
+              <input
+                id="gallery-input"
+                class="visually-hidden"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+              />
+            </label>
+            <p id="pending-note" class="pending-note"></p>
+          </div>
+          <div class="actions wide">
+            <button type="submit" id="line-submit">Dodaj pozycję</button>
+            <button type="button" class="secondary" id="line-cancel">Anuluj</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="line.js?v=dev"></script>
+  </body>
+</html>

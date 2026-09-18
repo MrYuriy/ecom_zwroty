@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zwroty — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main>
+      <div class="page-head">
+        <h1>Zwroty</h1>
+        <a class="btn" href="return-form.html">+ Nowy zwrot</a>
+      </div>
+
+      <section class="card">
+        <form id="filters" class="form-grid">
+          <label>
+            Numer BO/WMS lub Tempo
+            <input name="number" type="search" placeholder="Szukaj…" />
+          </label>
+          <label>
+            Data od
+            <input name="date_from" type="date" />
+          </label>
+          <label>
+            Data do
+            <input name="date_to" type="date" />
+          </label>
+          <div class="actions">
+            <button type="submit">Filtruj</button>
+            <button type="reset" class="secondary">Wyczyść</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="table-wrap">
+          <table class="responsive">
+            <thead>
+              <tr>
+                <th>Data zwrotu</th>
+                <th>Numer BO/WMS</th>
+                <th>Numer Tempo</th>
+                <th>Pozycje</th>
+                <th>Sztuk</th>
+                <th>Uszkodzone</th>
+              </tr>
+            </thead>
+            <tbody id="orders"></tbody>
+          </table>
+        </div>
+        <div id="pager" class="pager"></div>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="returns.js?v=dev"></script>
+  </body>
+</html>
