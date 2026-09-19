@@ -28,7 +28,8 @@ New feature = one vertical: `model → migration → repository → schema → s
 ## DB migrations
 `00001` users · `00002` sku_registry · `00003` return_orders + order_lines · `00004` line_images ·
 `00005` drops the SUPERVISOR role (roles: OPERATOR, ADMIN) · `00006` wms_orders ·
-`00007` users log in with `wms_login` (case-insensitive) instead of an e-mail. Hand-written,
+`00007` users log in with `wms_login` (case-insensitive) instead of an e-mail ·
+`00008` return status + export statuses. Hand-written,
 `down_revision` = previous, run on container start (`entrypoint.sh`).
 
 ## Tests
@@ -43,6 +44,15 @@ Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; g
 gaps. `python -m app.scripts.rename_images` renames everything (idempotent). Type is checked from magic bytes (JPEG/PNG/WebP), size/count limits in `core/config/storage.py`.
 `GET /api/images/{uuid}` needs the bearer token, so the cabinet shows photos from blob URLs.
 Deleting a line or a return deletes its files after the DB commit.
+
+## Return status and the report export
+A return is `OPEN` while items are received and `CLOSED` when finished ("Zakończ"/"Następny zwrot" close it).
+A closed return is locked (header, lines, photos, delete) until reopened. Only closed returns are exported.
+`/api/integration/*` (`routers/integration.py`) hands out report rows (`services/report.py`: the report's exact
+10 columns) and photos, each once: GET pending → write → POST `.../ack`, which sets `order_lines.exported_at` /
+`line_images.downloaded_at`. Edits after export are not re-sent. Access: a logged-in user's token or the
+`X-API-Key` header (`INTEGRATION_API_KEY`, for unattended jobs). The client is the Google Apps Script in
+`integrations/google-apps-script/`.
 
 ## Frontend
 Static multi-page cabinet in `frontend/`, served at `/app` (`app/cabinet.py`): HTML is `no-cache`,
