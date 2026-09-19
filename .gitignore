@@ -24,3 +24,6 @@ htmlcov/
 
 # Uploaded line photos (local dev)
 /uploads/
+
+# Google service-account key (secret)
+creds.json

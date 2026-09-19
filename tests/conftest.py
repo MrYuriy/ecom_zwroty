@@ -14,7 +14,7 @@ from app.core.security.password import hash_password  # noqa: E402
 from app.database.postgres import get_session  # noqa: E402
 from app.enums.user import RoleEnum  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import Base, LineImage, OrderLine, ReturnOrder, Sku, User  # noqa: E402
+from app.models import Base, LineImage, OrderLine, ReturnOrder, Sku, User, WmsOrder  # noqa: E402
 
 # Order matters for FKs.
 TEST_TABLES = [
@@ -23,6 +23,7 @@ TEST_TABLES = [
     ReturnOrder.__table__,
     OrderLine.__table__,
     LineImage.__table__,
+    WmsOrder.__table__,
 ]
 
 PASSWORD = "Str0ng-pass"
@@ -51,14 +52,19 @@ async def session_factory(engine):
 
 
 @pytest_asyncio.fixture
-async def client(session_factory):
-    app = create_app()
+async def app(session_factory):
+    application = create_app()
 
     async def _override_get_session():
         async with session_factory() as session:
             yield session
 
-    app.dependency_overrides[get_session] = _override_get_session
+    application.dependency_overrides[get_session] = _override_get_session
+    return application
+
+
+@pytest_asyncio.fixture
+async def client(app):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 

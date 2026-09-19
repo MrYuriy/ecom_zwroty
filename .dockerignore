@@ -1,0 +1,12 @@
+# Secrets are mounted at runtime, never baked into the image.
+.env
+creds.json
+
+.git
+.venv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+uploads/

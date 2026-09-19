@@ -24,6 +24,74 @@ async function init() {
   form.return_date.value = formatDate(order.return_date);
 }
 
+// ---------- Tempo number from the WMS sheet ----------
+const tempoHint = $("#tempo-hint");
+let autoFilledTempo = null; // what we filled in ourselves, so a number typed by hand is never overwritten
+let lookupSeq = 0;
+let lookupTimer = null;
+
+function setHint(text, kind = "") {
+  tempoHint.textContent = text;
+  tempoHint.className = `field-hint wide ${kind}`;
+}
+
+function fillTempo(value) {
+  form.tempo_number.value = value || "";
+  autoFilledTempo = form.tempo_number.value;
+}
+
+async function lookupTempo() {
+  clearTimeout(lookupTimer);
+  const number = form.bo_wms_number.value.trim();
+  const seq = ++lookupSeq;
+  if (!number || number.toLowerCase() === NO_NUMBER) {
+    setHint("");
+    return false;
+  }
+  const typed = form.tempo_number.value.trim();
+  const mayOverwrite = !typed || typed === autoFilledTempo;
+  try {
+    const wms = await api(`/wms-orders/${encodeURIComponent(number)}`);
+    if (seq !== lookupSeq) return false; // the number changed while we were asking
+    if (mayOverwrite) {
+      fillTempo(wms.tempo_number);
+      if (wms.tempo_number) setHint("Numer Tempo uzupełniony z arkusza WMS.", "ok");
+      else setHint("Zamówienie jest w arkuszu WMS, ale bez numeru Tempo.");
+      return Boolean(wms.tempo_number);
+    }
+    if (typed !== wms.tempo_number) setHint(`Uwaga: w arkuszu WMS numer Tempo to ${wms.tempo_number || "brak"}.`, "warn");
+    else setHint("");
+    return true;
+  } catch (err) {
+    if (seq !== lookupSeq) return false;
+    if (err.status !== 404) {
+      showError(err);
+      return false;
+    }
+    if (mayOverwrite) fillTempo("");
+    setHint("Brak tego numeru w arkuszu WMS — wpisz numer Tempo ręcznie.", "warn");
+    return false;
+  }
+}
+
+form.bo_wms_number.addEventListener("input", () => {
+  clearTimeout(lookupTimer);
+  lookupTimer = setTimeout(lookupTempo, 400);
+});
+form.bo_wms_number.addEventListener("change", lookupTempo);
+
+// A scanner ends with Enter: look the number up instead of submitting, then move on.
+form.bo_wms_number.addEventListener("keydown", async (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  const filled = await lookupTempo();
+  (filled ? $("#submit") : form.tempo_number).focus();
+});
+
+form.tempo_number.addEventListener("input", () => {
+  if (form.tempo_number.value.trim() !== autoFilledTempo) setHint("");
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!form.return_date.value) {

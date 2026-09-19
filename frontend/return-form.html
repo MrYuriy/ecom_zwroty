@@ -18,7 +18,7 @@
         <form id="order-form" class="form-grid">
           <label>
             Numer BO/WMS
-            <input name="bo_wms_number" maxlength="64" placeholder="puste = brak" autofocus />
+            <input name="bo_wms_number" maxlength="64" placeholder="puste = brak" autocomplete="off" autofocus />
           </label>
           <label>
             Numer Tempo
@@ -28,6 +28,7 @@
             Data zwrotu
             <input name="return_date" type="date" required />
           </label>
+          <p id="tempo-hint" class="field-hint wide" role="status" aria-live="polite"></p>
           <div class="actions wide">
             <button type="submit" id="submit">Utwórz i dodaj pozycje</button>
             <a id="cancel" class="btn secondary" href="returns.html">Anuluj</a>
