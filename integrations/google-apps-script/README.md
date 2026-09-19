@@ -13,10 +13,11 @@ and **new line photos** into a Drive folder, using `/api/integration/*`.
 
 1. Open the spreadsheet → **Extensions → Apps Script**.
 2. Create the files and paste the contents from this folder:
-   - `Code.gs`
+   - `Config.gs` — all settings
+   - `Code.gs` — the sync itself
    - `LoginDialog.html` (File → + → HTML, name it `LoginDialog`)
    - `appsscript.json`: Project Settings → tick **Show "appsscript.json" manifest file**, then replace it.
-3. Check the settings at the top of `Code.gs` (`API_BASE`, `REPORT_SHEET_GID`, `PHOTOS_FOLDER_ID`).
+3. Check `Config.gs` (`API_BASE`, `REPORT_SHEET_GID`, `PHOTOS_FOLDER_ID`).
 4. Save, reload the spreadsheet: a **Zwroty e-com** menu appears. The first run asks for permissions
    (the sheet, Drive, external requests, dialogs).
 5. Optional button: **Insert → Drawing**, draw a button, then **⋮ → Assign script** → `showSyncDialog`.

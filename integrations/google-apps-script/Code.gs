@@ -8,18 +8,8 @@
  * nothing is lost: pressing the button again simply continues where the previous run stopped.
  *
  * Every step is logged; the log is shown in the dialog and in Apps Script → Executions.
+ * Settings (API address, sheet tab, Drive folder, batch sizes) live in Config.gs.
  */
-
-// ===== Settings =====
-const API_BASE = "https://ecom-zwroty.piatek-magazyn.com/api";
-const REPORT_SHEET_GID = 0; // the tab from ...#gid=0 in the sheet's URL
-const PHOTOS_FOLDER_ID = "1o5rc5eYQXJ1qSA1DgLmm7665ZrGOzYO3";
-
-const LINES_BATCH = 500;
-const PHOTOS_BATCH = 20; // downloaded in parallel
-const TIME_BUDGET_MS = 5 * 60 * 1000; // Apps Script kills a run at 6 minutes; stop cleanly before that
-const DATE_COLUMN = 1; // DATA ZWROTU
-const TEXT_COLUMNS = [2, 3, 4]; // BO/WMS, Tempo, reference: keep "brak" and leading zeros exactly as sent
 
 // ===== Menu and dialog =====
 
