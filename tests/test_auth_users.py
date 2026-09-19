@@ -69,3 +69,8 @@ async def test_admin_cannot_deactivate_self(client, admin_headers):
     me = (await client.get("/api/auth/me", headers=admin_headers)).json()
     response = await client.patch(f"/api/users/{me['id']}", json={"is_active": False}, headers=admin_headers)
     assert response.status_code == 400
+
+
+async def test_only_operator_and_admin_roles_exist(client, admin_headers):
+    payload = {"email": "boss@example.com", "password": PASSWORD, "full_name": "Boss", "role": "SUPERVISOR"}
+    assert (await client.post("/api/users", json=payload, headers=admin_headers)).status_code == 422

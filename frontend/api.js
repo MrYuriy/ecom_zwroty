@@ -20,7 +20,7 @@ const TOKEN = {
 const LABELS = {
   carrier: { PARCEL: "paczka", PALLET: "paleta" },
   condition: { DAMAGED: "uszkodzony", FULL_VALUE: "pełnowartościowy" },
-  role: { OPERATOR: "Operator", SUPERVISOR: "Kierownik", ADMIN: "Administrator" },
+  role: { OPERATOR: "Operator", ADMIN: "Administrator" },
 };
 
 const NO_NUMBER = "brak";
