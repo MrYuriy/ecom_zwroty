@@ -37,13 +37,17 @@
       <section class="card" aria-labelledby="photos-title">
         <div class="page-head">
           <h2 id="photos-title">Zdjęcia</h2>
-          <a id="open-original" class="hidden" target="_blank" rel="noopener" href="#">Otwórz w pełnej rozdzielczości</a>
+          <div id="photo-links" class="actions hidden">
+            <a id="open-original" target="_blank" rel="noopener" href="#">Otwórz w pełnej rozdzielczości</a>
+            <a id="download" href="#" download>Pobierz</a>
+          </div>
         </div>
         <p id="no-photos" class="empty hidden">Brak zdjęć dla tej pozycji.</p>
         <div id="viewer" class="viewer hidden">
           <img id="viewer-img" alt="Zdjęcie pozycji" />
           <span id="viewer-counter" class="viewer-counter"></span>
         </div>
+        <p id="viewer-name" class="muted viewer-name"></p>
         <div id="viewer-strip" class="thumbs viewer-strip"></div>
       </section>
     </main>

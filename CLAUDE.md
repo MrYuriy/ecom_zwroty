@@ -36,8 +36,11 @@ sqlite in-memory (`tests/conftest.py`, add new tables to `TEST_TABLES`); `admin_
 `operator_headers` fixtures log in through the API.
 
 ## Line images
-Files live in `UPLOADS_DIR` (a docker volume at `/data/uploads`; `uploads/` locally, gitignored), named by
-the server. Type is checked from magic bytes (JPEG/PNG/WebP), size/count limits in `core/config/storage.py`.
+Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; gitignored), named
+`{bo_wms_number or brak}_{trade_reference}_{N}.{ext}` (`services/image_naming.py`). N runs 1..k per
+(BO/WMS, reference) pair across all returns, since numbers repeat and "brak" is common; unsafe characters become
+`~<hex>`. Changing an order's BO/WMS number, a line's SKU or a SKU's reference renames the files; deleting closes
+gaps. `python -m app.scripts.rename_images` renames everything (idempotent). Type is checked from magic bytes (JPEG/PNG/WebP), size/count limits in `core/config/storage.py`.
 `GET /api/images/{uuid}` needs the bearer token, so the cabinet shows photos from blob URLs.
 Deleting a line or a return deletes its files after the DB commit.
 

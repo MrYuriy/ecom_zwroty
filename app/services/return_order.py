@@ -20,7 +20,8 @@ from app.schemas.return_order import (
     ReturnOrderOut,
     ReturnOrderUpdate,
 )
-from app.services.image_storage import ImageStorage, detect_image_type
+from app.services.image_naming import ImageNamer
+from app.services.image_storage import ImageStorage, detect_image_type, upload_file_name
 
 _CLEARABLE_LINE_FIELDS = {"damage_description", "remarks"}
 
@@ -33,6 +34,7 @@ class ReturnOrderService:
         self.images = LineImageRepository(session)
         self.skus = SkuRepository(session)
         self.storage = ImageStorage()
+        self.namer = ImageNamer(session, self.storage)
 
     async def _get_order(self, order_uuid: UUID) -> ReturnOrder:
         order = await self.orders.get_one(uuid=order_uuid)
@@ -83,15 +85,22 @@ class ReturnOrderService:
         # return_date is required; an explicit null means "leave it as is".
         if changes.get("return_date") is None:
             changes.pop("return_date", None)
+        # Photo names carry the BO/WMS number, so a new number renames them (and closes gaps under the old one).
+        renamed = "bo_wms_number" in changes and changes["bo_wms_number"] != order.bo_wms_number
+        keys_before = await self.images.keys_for_order(order_uuid) if renamed else set()
         await self.orders.update_one(order, changes)
+        if renamed:
+            await self.namer.renumber_quietly(keys_before | await self.images.keys_for_order(order_uuid))
         return await self._reload(order_uuid)
 
     async def delete_order(self, order_uuid: UUID) -> None:
         order = await self._get_order(order_uuid)
         file_names = await self.images.file_names_for_order(order_uuid)
+        keys = await self.images.keys_for_order(order_uuid)
         await self.orders.delete_one(order)
         # Files go only after the rows are gone, so a failed delete never leaves rows pointing at nothing.
         await self.storage.delete(file_names)
+        await self.namer.renumber_quietly(keys)
 
     async def add_line(self, order_uuid: UUID, data: OrderLineCreate) -> ReturnOrderOut:
         await self._get_order(order_uuid)
@@ -109,14 +118,21 @@ class ReturnOrderService:
         }
         if "sku_id" in changes:
             await self._ensure_sku_exists(changes["sku_id"])
+        # Photo names carry the SKU reference, so another SKU renames them.
+        resku = "sku_id" in changes and changes["sku_id"] != line.sku_id
+        keys_before = await self.images.keys_for_line(line_uuid) if resku else set()
         await self.lines.update_one(line, changes)
+        if resku:
+            await self.namer.renumber_quietly(keys_before | await self.images.keys_for_line(line_uuid))
         return await self._reload(order_uuid)
 
     async def delete_line(self, order_uuid: UUID, line_uuid: UUID) -> ReturnOrderOut:
         line = await self._get_line(order_uuid, line_uuid)
         file_names = await self.images.file_names_for_line(line_uuid)
+        keys = await self.images.keys_for_line(line_uuid)
         await self.lines.delete_one(line)
         await self.storage.delete(file_names)
+        await self.namer.renumber_quietly(keys)
         return await self._reload(order_uuid)
 
     # ---------- line images ----------
@@ -144,8 +160,9 @@ class ReturnOrderService:
         images = [await self._read_image(upload) for upload in uploads]
         saved: list[str] = []
         try:
-            for data, content_type in images:
-                file_name = await self.storage.save(data, content_type)
+            for index, (data, content_type) in enumerate(images):
+                file_name = upload_file_name(index, content_type)
+                await self.storage.save(data, file_name)
                 saved.append(file_name)
                 self.session.add(
                     LineImage(
@@ -160,6 +177,7 @@ class ReturnOrderService:
             await self.session.rollback()
             await self.storage.delete(saved)
             raise
+        await self.namer.renumber_quietly(await self.images.keys_for_line(line_uuid))
         return await self._reload(order_uuid)
 
     async def delete_image(self, order_uuid: UUID, line_uuid: UUID, image_uuid: UUID) -> ReturnOrderOut:
@@ -168,16 +186,18 @@ class ReturnOrderService:
         if not image:
             raise ObjectNotFoundException(image_uuid, "Image")
         file_name = image.file_name
+        keys = await self.images.keys_for_line(line_uuid)
         await self.images.delete_one(image)
         await self.storage.delete([file_name])
+        await self.namer.renumber_quietly(keys)
         return await self._reload(order_uuid)
 
-    async def get_image_file(self, image_uuid: UUID) -> tuple[Path, str]:
+    async def get_image_file(self, image_uuid: UUID) -> tuple[Path, str, str]:
         image = await self.images.get_one(uuid=image_uuid)
         path = self.storage.path_of(image.file_name) if image else None
         if not image or not path.is_file():
             raise ObjectNotFoundException(image_uuid, "Image")
-        return path, image.content_type
+        return path, image.content_type, image.file_name
 
 
 def get_return_order_service(session: AsyncSession = Depends(get_session)) -> ReturnOrderService:

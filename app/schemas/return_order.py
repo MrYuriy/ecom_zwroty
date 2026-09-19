@@ -41,6 +41,7 @@ class LineImageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     uuid: UUID
+    file_name: str
     content_type: str
     size_bytes: int
     created_at: datetime

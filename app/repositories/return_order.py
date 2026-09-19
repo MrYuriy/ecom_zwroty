@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.line_image import LineImage
 from app.models.return_order import OrderLine, ReturnOrder
+from app.models.sku import Sku
 from app.repositories.base import BaseRepository
 
 # Everything a return is serialized with, loaded up front (async sessions can't lazy-load).
@@ -77,3 +78,39 @@ class LineImageRepository(BaseRepository[LineImage]):
     async def count_for_line(self, line_uuid: UUID) -> int:
         query = select(func.count()).select_from(LineImage).where(LineImage.order_line_uuid == line_uuid)
         return (await self.session.execute(query)).scalar() or 0
+
+    # ---------- naming: images are named after (order's BO/WMS number, line's SKU reference) ----------
+
+    def _keyed(self, *columns):
+        return (
+            select(*columns)
+            .select_from(LineImage)
+            .join(OrderLine, OrderLine.uuid == LineImage.order_line_uuid)
+            .join(ReturnOrder, ReturnOrder.uuid == OrderLine.return_order_uuid)
+            .join(Sku, Sku.id == OrderLine.sku_id)
+        )
+
+    async def for_key(self, bo_wms_number: str | None, trade_reference: str) -> list[LineImage]:
+        order_matches = (
+            ReturnOrder.bo_wms_number == bo_wms_number
+            if bo_wms_number is not None
+            else ReturnOrder.bo_wms_number.is_(None)
+        )
+        query = self._keyed(LineImage).where(order_matches, Sku.trade_reference == trade_reference)
+        return list((await self.session.execute(query)).scalars().all())
+
+    async def _keys(self, *conditions) -> set[tuple[str | None, str]]:
+        query = self._keyed(ReturnOrder.bo_wms_number, Sku.trade_reference).where(*conditions).distinct()
+        return {(bo, ref) for bo, ref in (await self.session.execute(query)).all()}
+
+    async def keys_for_order(self, order_uuid: UUID) -> set[tuple[str | None, str]]:
+        return await self._keys(ReturnOrder.uuid == order_uuid)
+
+    async def keys_for_line(self, line_uuid: UUID) -> set[tuple[str | None, str]]:
+        return await self._keys(OrderLine.uuid == line_uuid)
+
+    async def keys_for_sku(self, sku_id: int) -> set[tuple[str | None, str]]:
+        return await self._keys(Sku.id == sku_id)
+
+    async def all_keys(self) -> set[tuple[str | None, str]]:
+        return await self._keys()

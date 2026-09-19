@@ -853,3 +853,10 @@ main.narrow .page-head {
 .field-hint.warn {
   color: var(--danger);
 }
+
+.viewer-name {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  word-break: break-all;
+}

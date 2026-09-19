@@ -32,6 +32,7 @@ async function show(index) {
   state.index = (index + images.length) % images.length;
   const image = images[state.index];
   $("#viewer-counter").textContent = images.length > 1 ? `${state.index + 1} / ${images.length}` : "";
+  $("#viewer-name").textContent = image.file_name;
   for (const [i, thumb] of [...$("#viewer-strip").children].entries()) {
     thumb.classList.toggle("selected", i === state.index);
   }
@@ -41,6 +42,8 @@ async function show(index) {
     if (images[state.index] !== image) return;
     $("#viewer-img").src = url;
     $("#open-original").href = url;
+    $("#download").href = url;
+    $("#download").download = image.file_name;
   } catch (err) {
     showError(err);
   }
@@ -51,7 +54,7 @@ function renderPhotos() {
   const hasPhotos = images.length > 0;
   $("#no-photos").classList.toggle("hidden", hasPhotos);
   $("#viewer").classList.toggle("hidden", !hasPhotos);
-  $("#open-original").classList.toggle("hidden", !hasPhotos);
+  $("#photo-links").classList.toggle("hidden", !hasPhotos);
   // One photo needs no picker.
   $("#viewer-strip").replaceChildren(
     ...(images.length > 1
