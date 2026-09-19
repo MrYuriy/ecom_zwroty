@@ -6,12 +6,18 @@ services:
     image: ecom-zwroty-app
     container_name: ecom-zwroty-api
     env_file: [.env]
-    ports:
-      - "${PORT}:${PORT}"
     environment:
+      # .env's DATABASE_URL is for running on the host; inside compose the DB is the "db" service.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: "8000"
       UPLOADS_DIR: /data/uploads
+    ports:
+      - "${APP_PORT:-8000}:8000"
     volumes:
-      - uploads:/data/uploads
+      # A host folder, so photos survive image rebuilds and are easy to back up.
+      - ./uploads:/data/uploads
+      # The Google key is mounted, never copied into the image (see .dockerignore).
+      - ./creds.json:/app/creds.json:ro
     depends_on:
       db: { condition: service_healthy }
     restart: unless-stopped
@@ -34,4 +40,3 @@ services:
 
 volumes:
   pgdata:
-  uploads:
