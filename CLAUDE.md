@@ -23,10 +23,12 @@ New feature = one vertical: `model → migration → repository → schema → s
   (PARCEL=paczka, PALLET=paleta, DAMAGED=uszkodzony, FULL_VALUE=pełnowartościowy, is_parametrized → tak/nie).
 - Missing BO/WMS or Tempo number is stored as **NULL** and rendered as "brak"; numbers may repeat (no unique).
 - `is_parametrized` belongs to the SKU; `remarks` (UWAGI) belongs to the order line.
-- No public registration — an ADMIN creates operators (`python -m app.scripts.create_admin` for the first admin).
+- No public registration — an ADMIN creates operators (`python -m app.scripts.create_admin --login <wms login>` for the first admin).
 
 ## DB migrations
-`00001` users · `00002` sku_registry · `00003` return_orders + order_lines · `00004` line_images. Hand-written,
+`00001` users · `00002` sku_registry · `00003` return_orders + order_lines · `00004` line_images ·
+`00005` drops the SUPERVISOR role (roles: OPERATOR, ADMIN) · `00006` wms_orders ·
+`00007` users log in with `wms_login` (case-insensitive) instead of an e-mail. Hand-written,
 `down_revision` = previous, run on container start (`entrypoint.sh`).
 
 ## Tests
