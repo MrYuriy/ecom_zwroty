@@ -22,21 +22,21 @@ $("#login-form").addEventListener("submit", async (event) => {
   const errorBox = $("#login-error");
   errorBox.hidden = true;
 
-  const email = form.email.value.trim();
+  const wmsLogin = form.wms_login.value.trim();
   const password = form.password.value;
-  if (!email || !password) {
-    errorBox.textContent = "Podaj e-mail i hasło.";
+  if (!wmsLogin || !password) {
+    errorBox.textContent = "Podaj login WMS i hasło.";
     errorBox.hidden = false;
     return;
   }
 
   await withBusy(form.querySelector("button"), async () => {
     try {
-      const data = await api("/auth/login", { method: "POST", body: { email, password } });
+      const data = await api("/auth/login", { method: "POST", body: { wms_login: wmsLogin, password } });
       TOKEN.set(data.access_token);
       location.replace(nextPage());
     } catch (err) {
-      errorBox.textContent = err.status === 401 ? "Nieprawidłowy e-mail lub hasło." : err.message;
+      errorBox.textContent = err.status === 401 ? "Nieprawidłowy login lub hasło." : err.message;
       errorBox.hidden = false;
       form.password.select();
     }

@@ -69,25 +69,25 @@ async def client(app):
         yield ac
 
 
-async def _create_user(session_factory, email: str, role: RoleEnum) -> None:
+async def _create_user(session_factory, wms_login: str, role: RoleEnum) -> None:
     async with session_factory() as session:
-        session.add(User(email=email, password_hash=hash_password(PASSWORD), full_name=email.split("@")[0], role=role))
+        session.add(User(wms_login=wms_login, password_hash=hash_password(PASSWORD), full_name=wms_login, role=role))
         await session.commit()
 
 
-async def _auth_headers(client: AsyncClient, email: str) -> dict:
-    response = await client.post("/api/auth/login", json={"email": email, "password": PASSWORD})
+async def _auth_headers(client: AsyncClient, wms_login: str) -> dict:
+    response = await client.post("/api/auth/login", json={"wms_login": wms_login, "password": PASSWORD})
     assert response.status_code == 200, response.text
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
 @pytest_asyncio.fixture
 async def admin_headers(client, session_factory) -> dict:
-    await _create_user(session_factory, "admin@example.com", RoleEnum.ADMIN)
-    return await _auth_headers(client, "admin@example.com")
+    await _create_user(session_factory, "admin", RoleEnum.ADMIN)
+    return await _auth_headers(client, "admin")
 
 
 @pytest_asyncio.fixture
 async def operator_headers(client, session_factory) -> dict:
-    await _create_user(session_factory, "operator@example.com", RoleEnum.OPERATOR)
-    return await _auth_headers(client, "operator@example.com")
+    await _create_user(session_factory, "operator", RoleEnum.OPERATOR)
+    return await _auth_headers(client, "operator")

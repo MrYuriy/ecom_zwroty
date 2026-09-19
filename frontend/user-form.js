@@ -16,8 +16,8 @@ async function init() {
   $("#title").textContent = `Edycja: ${user.full_name}`;
   document.title = "Edycja użytkownika — Zwroty e-com";
   $("#password-label").textContent = "Nowe hasło (puste = bez zmian)";
-  // The e-mail is the login and stays fixed once the account exists.
-  form.email.disabled = true;
+  // The login is how the operator signs in; it stays fixed once the account exists.
+  form.wms_login.disabled = true;
   $("#active-field").classList.remove("hidden");
   // An admin can't lock themselves out.
   form.role.disabled = isSelf;
@@ -25,7 +25,7 @@ async function init() {
   $("#self-note").classList.toggle("hidden", !isSelf);
 
   form.full_name.value = user.full_name;
-  form.email.value = user.email;
+  form.wms_login.value = user.wms_login;
   form.role.value = user.role;
   form.is_active.checked = user.is_active;
   form.full_name.focus();
@@ -37,9 +37,13 @@ function buildRequest() {
   if (!fullName) return { error: "Podaj imię i nazwisko" };
 
   if (!userId) {
-    const email = form.email.value.trim();
-    if (!email || !password) return { error: "Podaj e-mail i hasło" };
-    return { path: "/users", method: "POST", body: { full_name: fullName, email, role: form.role.value, password } };
+    const wmsLogin = form.wms_login.value.trim();
+    if (!wmsLogin || !password) return { error: "Podaj login WMS i hasło" };
+    return {
+      path: "/users",
+      method: "POST",
+      body: { full_name: fullName, wms_login: wmsLogin, role: form.role.value, password },
+    };
   }
 
   const body = { full_name: fullName };

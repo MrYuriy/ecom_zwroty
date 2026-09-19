@@ -14,10 +14,10 @@ class AuthService:
         self.users = UserRepository(session)
 
     async def login(self, data: LoginRequest) -> TokenOut:
-        user = await self.users.get_by_email(data.email)
-        # Same message for unknown email and wrong password, so emails can't be probed.
+        user = await self.users.get_by_login(data.wms_login)
+        # Same message for an unknown login and a wrong password, so logins can't be probed.
         if not user or not verify_password(data.password, user.password_hash) or not user.is_active:
-            raise UnauthorizedException("Invalid email or password")
+            raise UnauthorizedException("Invalid login or password")
         return TokenOut(access_token=create_access_token(user.id))
 
 

@@ -1,20 +1,23 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.enums.user import RoleEnum
 
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    wms_login: str = Field(min_length=1, max_length=64)
     password: str
     full_name: str = Field(min_length=1, max_length=255)
     role: RoleEnum = RoleEnum.OPERATOR
 
-    @field_validator("email")
+    @field_validator("wms_login")
     @classmethod
-    def _lower_email(cls, value: str) -> str:
-        return value.lower()
+    def _strip_login(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("WMS login must not be blank")
+        return value
 
 
 class UserUpdate(BaseModel):
@@ -28,7 +31,7 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    email: str
+    wms_login: str
     full_name: str
     role: RoleEnum
     is_active: bool
@@ -36,7 +39,7 @@ class UserOut(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    wms_login: str
     password: str
 
 

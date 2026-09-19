@@ -14,11 +14,11 @@ class UserService:
         self.users = UserRepository(session)
 
     async def create_user(self, data: UserCreate) -> UserOut:
-        if await self.users.get_by_email(data.email):
-            raise ObjectAlreadyExistsException(data.email, "User")
+        if await self.users.get_by_login(data.wms_login):
+            raise ObjectAlreadyExistsException(data.wms_login, "User")
         user = await self.users.create_one(
             {
-                "email": data.email,
+                "wms_login": data.wms_login,
                 "password_hash": hash_password(data.password),
                 "full_name": data.full_name,
                 "role": data.role,

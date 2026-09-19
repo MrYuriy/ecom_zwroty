@@ -11,7 +11,7 @@ Stack: Python 3.13, FastAPI (async), SQLAlchemy 2, Alembic, PostgreSQL, Docker, 
 uv sync
 cp .env.sample .env        # set DATABASE_URL to a local Postgres
 uv run alembic upgrade head
-uv run python -m app.scripts.create_admin --email admin@example.com --full-name "Admin"
+uv run python -m app.scripts.create_admin --login admin --full-name "Admin"
 uv run uvicorn app.main:app --reload
 ```
 
@@ -22,7 +22,7 @@ API docs: http://localhost:8000/docs
 ```bash
 cp .env.sample .env
 docker compose up -d --build
-docker compose exec app python -m app.scripts.create_admin --email admin@example.com --full-name "Admin"
+docker compose exec app python -m app.scripts.create_admin --login admin --full-name "Admin"
 ```
 
 ## Checks

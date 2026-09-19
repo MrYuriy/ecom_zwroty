@@ -8,7 +8,7 @@ function userRow(user) {
     "tr",
     {},
     h("td", { "data-label": "Imię i nazwisko" }, user.full_name),
-    h("td", { "data-label": "E-mail" }, user.email),
+    h("td", { "data-label": "Login WMS" }, user.wms_login),
     h("td", { "data-label": "Rola" }, LABELS.role[user.role]),
     h(
       "td",
