@@ -1,6 +1,7 @@
 from app.core.config.base import BaseConfig
 from app.core.config.db import DbBaseConfig
 from app.core.config.google import GoogleConfig
+from app.core.config.integration import IntegrationConfig
 from app.core.config.jwt import JwtConfig
 from app.core.config.storage import StorageConfig
 
@@ -12,6 +13,7 @@ class Settings(BaseConfig):
     jwt: JwtConfig = JwtConfig()
     storage: StorageConfig = StorageConfig()
     google: GoogleConfig = GoogleConfig()
+    integration: IntegrationConfig = IntegrationConfig()
 
 
 settings = Settings()
