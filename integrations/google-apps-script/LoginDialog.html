@@ -10,10 +10,14 @@
       button { padding: 9px 16px; font-size: 14px; font-weight: bold; border: 0; border-radius: 6px;
                background: #1f5fbf; color: #fff; cursor: pointer; }
       button:disabled { opacity: 0.6; cursor: default; }
-      button.secondary { background: #fff; color: #1c2129; border: 1px solid #dfe2e7; }
+      button.secondary { background: #fff; color: #1c2129; border: 1px solid #dfe2e7; font-weight: normal; }
       #status { white-space: pre-line; margin-top: 12px; font-size: 13px; }
       .error { color: #c0352b; }
       .ok { color: #1f7a45; }
+      details { margin-top: 10px; font-size: 12px; }
+      summary { cursor: pointer; color: #5f6b7a; }
+      pre { white-space: pre-wrap; word-break: break-word; background: #f8f9fb; border: 1px solid #dfe2e7;
+            border-radius: 6px; padding: 8px; max-height: 180px; overflow: auto; margin: 6px 0; }
     </style>
   </head>
   <body>
@@ -21,28 +25,57 @@
       <label>Login WMS <input id="login" autocomplete="username" required autofocus /></label>
       <label>Hasło <input id="password" type="password" autocomplete="current-password" required /></label>
       <button id="submit" type="submit">Pobierz zwroty i zdjęcia</button>
-      <button id="close" type="button" class="secondary" onclick="google.script.host.close()">Zamknij</button>
+      <button type="button" class="secondary" onclick="google.script.host.close()">Zamknij</button>
     </form>
+
     <div id="status"></div>
+    <details id="log-box" hidden>
+      <summary>Dziennik kroków</summary>
+      <pre id="log"></pre>
+      <button type="button" class="secondary" id="copy">Kopiuj dziennik</button>
+    </details>
 
     <script>
       const form = document.getElementById("form");
       const status = document.getElementById("status");
       const submit = document.getElementById("submit");
+      const logBox = document.getElementById("log-box");
+      const logText = document.getElementById("log");
 
       function show(text, kind) {
         status.textContent = text;
         status.className = kind || "";
       }
 
+      function showLog(text, open) {
+        logText.textContent = text || "";
+        logBox.hidden = !text;
+        logBox.open = Boolean(open);
+      }
+
+      document.getElementById("copy").addEventListener("click", () => {
+        navigator.clipboard.writeText(logText.textContent).then(
+          () => show("Dziennik skopiowany.", "ok"),
+          () => {
+            // Clipboard access can be blocked in the dialog; select the text so Ctrl+C works.
+            const range = document.createRange();
+            range.selectNodeContents(logText);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+          },
+        );
+      });
+
       form.addEventListener("submit", (event) => {
         event.preventDefault();
         submit.disabled = true;
+        showLog("");
         show("Trwa synchronizacja… (może potrwać do 5 minut)");
         google.script.run
-          .withSuccessHandler((summary) => {
+          .withSuccessHandler((result) => {
             submit.disabled = false;
-            show(summary, "ok");
+            show(result.message, result.ok ? "ok" : "error");
+            showLog(result.log, !result.ok);
           })
           .withFailureHandler((error) => {
             submit.disabled = false;

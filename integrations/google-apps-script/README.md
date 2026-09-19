@@ -22,3 +22,6 @@ and **new line photos** into a Drive folder, using `/api/integration/*`.
 5. Optional button: **Insert → Drawing**, draw a button, then **⋮ → Assign script** → `showSyncDialog`.
 
 Whoever presses the button needs edit access to the spreadsheet and the Drive folder.
+
+**Zwroty e-com → Sprawdź reguły arkusza** writes nothing; it prints the data validation of each report
+column, which is what to look at when the sheet rejects a value.
