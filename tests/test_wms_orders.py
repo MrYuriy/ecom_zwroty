@@ -68,3 +68,15 @@ async def test_sync_without_sheet_id_is_rejected(client, admin_headers, sheets, 
     monkeypatch.setattr(settings.google, "WMS_SHEET_ID", "")
     assert (await client.post("/api/wms-orders/sync", headers=admin_headers)).status_code == 400
 
+
+async def test_admin_lists_and_searches_orders(client, admin_headers, sheets):
+    await client.post("/api/wms-orders/sync", headers=admin_headers)
+    everything = (await client.get("/api/wms-orders", headers=admin_headers)).json()
+    assert everything["total"] == 3
+
+    by_tempo = (await client.get("/api/wms-orders", params={"q": "42539"}, headers=admin_headers)).json()
+    assert [o["bo_wms_number"] for o in by_tempo["items"]] == ["167133"]
+
+
+async def test_operator_cannot_list_orders(client, operator_headers):
+    assert (await client.get("/api/wms-orders", headers=operator_headers)).status_code == 403

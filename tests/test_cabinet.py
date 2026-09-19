@@ -15,6 +15,7 @@ PAGES = [
     "sku-form.html",
     "users.html",
     "user-form.html",
+    "wms-orders.html",
 ]
 
 

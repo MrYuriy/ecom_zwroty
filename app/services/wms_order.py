@@ -7,6 +7,7 @@ from app.core import settings
 from app.core.exc import BadRequestException, ObjectNotFoundException
 from app.database.postgres import get_session
 from app.repositories.wms_order import WmsOrderRepository
+from app.schemas.common import Page
 from app.schemas.wms_order import WmsOrderOut, WmsSyncResult
 from app.services.google_sheets import GoogleSheetsClient, get_sheets_client
 
@@ -41,6 +42,10 @@ class WmsOrderService:
         if not order:
             raise ObjectNotFoundException(bo_wms_number, "WMS order")
         return WmsOrderOut.model_validate(order)
+
+    async def search(self, query: str | None, page: int, limit: int) -> Page[WmsOrderOut]:
+        orders, total = await self.orders.search(query.strip() if query else None, page, limit)
+        return Page(items=[WmsOrderOut.model_validate(o) for o in orders], total=total, page=page, limit=limit)
 
     async def sync_from_sheet(self) -> WmsSyncResult:
         """Add orders that appeared in the sheet since the last run; existing ones are left as they are."""

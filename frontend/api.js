@@ -218,6 +218,11 @@ function formatDate(iso) {
   return iso ? iso.slice(0, 10) : "";
 }
 
+// "2026-09-19T17:47:42.99" → "2026-09-19 17:47" (server timestamps are shown as stored).
+function formatDateTime(iso) {
+  return iso ? iso.slice(0, 16).replace("T", " ") : "";
+}
+
 function todayIso() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
@@ -271,6 +276,7 @@ const SECTIONS = {
   "returns.html": ["returns.html", "return.html", "return-form.html", "line.html", "line-view.html"],
   "skus.html": ["skus.html", "sku-form.html"],
   "users.html": ["users.html", "user-form.html"],
+  "wms-orders.html": ["wms-orders.html"],
 };
 
 function renderTopbar() {
@@ -286,6 +292,7 @@ function renderTopbar() {
       {},
       link("returns.html", "Zwroty"),
       link("skus.html", "Produkty (SKU)"),
+      currentUser.role === "ADMIN" ? link("wms-orders.html", "Zamówienia WMS") : null,
       currentUser.role === "ADMIN" ? link("users.html", "Użytkownicy") : null,
     ),
     h(

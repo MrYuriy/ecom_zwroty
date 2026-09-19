@@ -1,4 +1,4 @@
-from sqlalchemy import insert, select
+from sqlalchemy import func, insert, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.wms_order import WmsOrder
@@ -19,3 +19,21 @@ class WmsOrderRepository(BaseRepository[WmsOrder]):
             await self.session.execute(insert(WmsOrder), rows[start : start + _INSERT_BATCH])
         await self.session.commit()
 
+    async def search(self, query: str | None, page: int, limit: int) -> tuple[list[WmsOrder], int]:
+        condition = None
+        if query:
+            pattern = f"%{query}%"
+            condition = or_(WmsOrder.bo_wms_number.ilike(pattern), WmsOrder.tempo_number.ilike(pattern))
+        rows_query = (
+            select(WmsOrder)
+            .order_by(WmsOrder.created_at.desc(), WmsOrder.bo_wms_number.desc())
+            .offset((page - 1) * limit)
+            .limit(limit)
+        )
+        total_query = select(func.count()).select_from(WmsOrder)
+        if condition is not None:
+            rows_query = rows_query.where(condition)
+            total_query = total_query.where(condition)
+        rows = (await self.session.execute(rows_query)).scalars().all()
+        total = (await self.session.execute(total_query)).scalar() or 0
+        return list(rows), total
