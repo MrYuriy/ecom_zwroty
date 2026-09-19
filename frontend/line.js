@@ -274,6 +274,22 @@ function fillFromLine(line) {
   form.remarks.value = line.remarks || "";
 }
 
+// "Zakończ" and "Następny zwrot" mean the operator is done: close the return, then move on.
+async function finishAndGo(event, target) {
+  event.preventDefault();
+  await withBusy(event.currentTarget, async () => {
+    try {
+      await api(`/returns/${orderId}/close`, { method: "POST" });
+      location.href = target;
+    } catch (err) {
+      showError(err);
+    }
+  });
+}
+
+$("#finish").addEventListener("click", (event) => finishAndGo(event, orderUrl));
+$("#next-order").addEventListener("click", (event) => finishAndGo(event, "return-form.html"));
+
 async function init() {
   if (!orderId) {
     location.replace("returns.html");
@@ -288,6 +304,12 @@ async function init() {
   } catch (err) {
     showError(err);
     if (err.status === 404 || err.status === 422) setTimeout(() => location.replace("returns.html"), 1500);
+    return;
+  }
+  if (state.order.status === "CLOSED") {
+    // A closed return is locked; send the operator to it (it can be reopened there).
+    toast("Zwrot jest zamknięty — otwórz go ponownie, aby wprowadzić zmiany", "error");
+    setTimeout(() => location.replace(orderUrl), 1500);
     return;
   }
   $("#order-ref").textContent =

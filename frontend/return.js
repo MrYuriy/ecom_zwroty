@@ -18,6 +18,10 @@ function photoCover(images) {
   return cover;
 }
 
+function isClosed() {
+  return order.status === "CLOSED";
+}
+
 function viewUrl(lineUuid) {
   return withParam(`line-view.html?order=${encodeURIComponent(orderId)}`, "line", lineUuid);
 }
@@ -34,7 +38,14 @@ function lineRow(line) {
       // Enter on the row itself only — not when a button inside it has focus.
       onkeydown: (e) => e.key === "Enter" && e.target === e.currentTarget && open(),
     },
-    h("td", { "data-label": "Referencja" }, line.sku.trade_reference),
+    h(
+      "td",
+      { "data-label": "Referencja" },
+      line.sku.trade_reference,
+      line.exported_at
+        ? h("span", { class: "badge exported", title: `W arkuszu od ${formatDateTime(line.exported_at)}` }, "w arkuszu")
+        : null,
+    ),
     h("td", { "data-label": "Produkt" }, line.sku.product_name),
     h("td", { "data-label": "Param." }, line.sku.is_parametrized ? "tak" : "nie"),
     h("td", { "data-label": "Ilość", class: "num" }, line.quantity),
@@ -51,9 +62,14 @@ function lineRow(line) {
       "td",
       // The buttons act on their own; the click must not also open the line.
       { class: "actions-cell", onclick: (e) => e.stopPropagation() },
-      h("a", { class: "btn secondary small", href: lineUrl(line.uuid) }, "Edytuj"),
-      " ",
-      h("button", { class: "danger small", onclick: (e) => deleteLine(line, e.currentTarget) }, "Usuń"),
+      // A closed return is locked; its lines can only be viewed.
+      isClosed()
+        ? null
+        : [
+            h("a", { class: "btn secondary small", href: lineUrl(line.uuid) }, "Edytuj"),
+            " ",
+            h("button", { class: "danger small", onclick: (e) => deleteLine(line, e.currentTarget) }, "Usuń"),
+          ],
     ),
   );
 }
@@ -67,6 +83,11 @@ function render() {
   $("#s-tempo").textContent = orNoNumber(order.tempo_number);
   $("#s-lines").textContent = order.lines.length;
   $("#s-pieces").textContent = order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  $("#s-status").replaceChildren(statusBadge(order.status));
+  for (const id of ["#add-line", "#edit-header", "#close-order", "#delete-order"]) {
+    $(id).classList.toggle("hidden", isClosed());
+  }
+  $("#reopen-order").classList.toggle("hidden", !isClosed());
 
   $("#lines").replaceChildren(
     ...(order.lines.length
@@ -87,6 +108,23 @@ async function deleteLine(line, button) {
     }
   });
 }
+
+async function setStatus(action, button, message) {
+  await withBusy(button, async () => {
+    try {
+      order = await api(`/returns/${orderId}/${action}`, { method: "POST" });
+      render();
+      toast(message);
+    } catch (err) {
+      showError(err);
+    }
+  });
+}
+
+$("#close-order").addEventListener("click", (event) =>
+  setStatus("close", event.currentTarget, "Zwrot zamknięty — trafi do raportu"),
+);
+$("#reopen-order").addEventListener("click", (event) => setStatus("reopen", event.currentTarget, "Zwrot otwarty"));
 
 $("#delete-order").addEventListener("click", async (event) => {
   const count = order.lines.length;

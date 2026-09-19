@@ -454,6 +454,17 @@ td.actions-cell {
   color: var(--success);
 }
 
+.badge.warning {
+  background: var(--warning-soft);
+  color: var(--text);
+}
+
+.badge.exported {
+  background: var(--primary-soft);
+  color: var(--primary);
+  margin-left: 6px;
+}
+
 .badge.neutral {
   background: var(--surface-2);
   color: var(--muted);

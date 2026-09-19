@@ -1,9 +1,9 @@
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Column, Date, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import CheckConstraint, Column, Date, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from app.enums.return_order import CarrierType, GoodsCondition
+from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
 from app.models.base import Base, CreatedAtMixin, TimestampMixin, UUIDMixin, UUIDType
 
 
@@ -15,6 +15,14 @@ class ReturnOrder(Base, UUIDMixin, TimestampMixin):
     tempo_number = Column(String(64), nullable=True, index=True)
     return_date = Column(Date, nullable=False, default=date.today, index=True)
     operator_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    status = Column(
+        Enum(ReturnStatus, name="return_status_enum"),
+        nullable=False,
+        default=ReturnStatus.OPEN,
+        server_default=ReturnStatus.OPEN.value,
+        index=True,
+    )
+    closed_at = Column(DateTime, nullable=True)
 
     operator = relationship("User", back_populates="return_orders")
     lines = relationship(
@@ -38,6 +46,8 @@ class OrderLine(Base, UUIDMixin, CreatedAtMixin):
     goods_condition = Column(Enum(GoodsCondition, name="goods_condition_enum"), nullable=False)
     damage_description = Column(Text, nullable=True)
     remarks = Column(Text, nullable=True)
+    # Set once the line was delivered to the report sheet (acknowledged by the integration script).
+    exported_at = Column(DateTime, nullable=True, index=True)
 
     return_order = relationship("ReturnOrder", back_populates="lines")
     sku = relationship("Sku")

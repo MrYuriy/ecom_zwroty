@@ -24,6 +24,7 @@ function orderRow(order) {
     h("td", { "data-label": "Pozycje", class: "num" }, order.lines.length),
     h("td", { "data-label": "Sztuk", class: "num" }, pieces),
     h("td", { "data-label": "Uszkodzone", class: "num" }, damaged ? h("span", { class: "badge danger" }, damaged) : "—"),
+    h("td", { "data-label": "Status" }, statusBadge(order.status)),
   );
 }
 
@@ -33,7 +34,7 @@ async function loadOrders() {
     $("#orders").replaceChildren(
       ...(page.items.length
         ? page.items.map(orderRow)
-        : [h("tr", {}, h("td", { colspan: "6", class: "empty" }, "Brak zwrotów dla wybranych filtrów."))]),
+        : [h("tr", {}, h("td", { colspan: "7", class: "empty" }, "Brak zwrotów dla wybranych filtrów."))]),
     );
     renderPager($("#pager"), page, (next) => {
       state.page = next;

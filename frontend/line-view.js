@@ -25,6 +25,9 @@ function renderDetails(order, line) {
   $("#v-condition").replaceChildren(conditionBadge(line.goods_condition));
   setText("#v-damage", line.damage_description);
   setText("#v-remarks", line.remarks);
+  setText("#v-exported", line.exported_at ? `tak, ${formatDateTime(line.exported_at)}` : "nie");
+  // Lines of a closed return are locked.
+  $("#edit-line").classList.toggle("hidden", order.status === "CLOSED");
 }
 
 async function show(index) {

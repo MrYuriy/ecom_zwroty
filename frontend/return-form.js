@@ -19,6 +19,11 @@ async function init() {
   document.title = "Edycja nagłówka — Zwroty e-com";
 
   const order = await api(`/returns/${orderId}`);
+  if (order.status === "CLOSED") {
+    toast("Zwrot jest zamknięty — otwórz go ponownie, aby wprowadzić zmiany", "error");
+    setTimeout(() => location.replace(detailUrl), 1500);
+    return;
+  }
   form.bo_wms_number.value = order.bo_wms_number || "";
   form.tempo_number.value = order.tempo_number || "";
   form.return_date.value = formatDate(order.return_date);

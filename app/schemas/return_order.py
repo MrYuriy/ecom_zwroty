@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.enums.return_order import CarrierType, GoodsCondition
+from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
 from app.schemas.sku import SkuOut
 
 _NO_NUMBER = "brak"
@@ -45,6 +45,7 @@ class LineImageOut(BaseModel):
     content_type: str
     size_bytes: int
     created_at: datetime
+    downloaded_at: datetime | None
 
 
 class OrderLineOut(BaseModel):
@@ -59,6 +60,7 @@ class OrderLineOut(BaseModel):
     damage_description: str | None
     remarks: str | None
     created_at: datetime
+    exported_at: datetime | None
 
 
 class ReturnOrderCreate(BaseModel):
@@ -84,6 +86,8 @@ class ReturnOrderOut(BaseModel):
     tempo_number: str | None
     return_date: date
     operator_id: int
+    status: ReturnStatus
+    closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
     lines: list[OrderLineOut]

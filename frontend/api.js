@@ -21,6 +21,7 @@ const LABELS = {
   carrier: { PARCEL: "paczka", PALLET: "paleta" },
   condition: { DAMAGED: "uszkodzony", FULL_VALUE: "pełnowartościowy" },
   role: { OPERATOR: "Operator", ADMIN: "Administrator" },
+  status: { OPEN: "w trakcie", CLOSED: "zamknięty" },
 };
 
 const NO_NUMBER = "brak";
@@ -227,6 +228,10 @@ function todayIso() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
+}
+
+function statusBadge(status) {
+  return h("span", { class: `badge ${status === "CLOSED" ? "neutral" : "warning"}` }, LABELS.status[status]);
 }
 
 function conditionBadge(condition) {

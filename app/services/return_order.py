@@ -3,11 +3,13 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import Depends, UploadFile
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import settings
 from app.core.exc import BadRequestException, ObjectNotFoundException
 from app.database.postgres import get_session
+from app.enums.return_order import ReturnStatus
 from app.models.line_image import LineImage
 from app.models.return_order import OrderLine, ReturnOrder
 from app.repositories.return_order import LineImageRepository, OrderLineRepository, ReturnOrderRepository
@@ -40,6 +42,13 @@ class ReturnOrderService:
         order = await self.orders.get_one(uuid=order_uuid)
         if not order:
             raise ObjectNotFoundException(order_uuid, "Return order")
+        return order
+
+    async def _get_open_order(self, order_uuid: UUID) -> ReturnOrder:
+        # A closed return is what the report export reads, so it only changes after being reopened.
+        order = await self._get_order(order_uuid)
+        if order.status == ReturnStatus.CLOSED:
+            raise BadRequestException("Return order is closed; reopen it to make changes")
         return order
 
     async def _get_line(self, order_uuid: UUID, line_uuid: UUID) -> OrderLine:
@@ -80,7 +89,7 @@ class ReturnOrderService:
         return Page(items=[ReturnOrderOut.model_validate(o) for o in orders], total=total, page=page, limit=limit)
 
     async def update_order(self, order_uuid: UUID, data: ReturnOrderUpdate) -> ReturnOrderOut:
-        order = await self._get_order(order_uuid)
+        order = await self._get_open_order(order_uuid)
         changes = data.model_dump(exclude_unset=True)
         # return_date is required; an explicit null means "leave it as is".
         if changes.get("return_date") is None:
@@ -93,8 +102,20 @@ class ReturnOrderService:
             await self.namer.renumber_quietly(keys_before | await self.images.keys_for_order(order_uuid))
         return await self._reload(order_uuid)
 
-    async def delete_order(self, order_uuid: UUID) -> None:
+    async def close_order(self, order_uuid: UUID) -> ReturnOrderOut:
         order = await self._get_order(order_uuid)
+        if order.status != ReturnStatus.CLOSED:
+            await self.orders.update_one(order, {"status": ReturnStatus.CLOSED, "closed_at": func.now()})
+        return await self._reload(order_uuid)
+
+    async def reopen_order(self, order_uuid: UUID) -> ReturnOrderOut:
+        order = await self._get_order(order_uuid)
+        if order.status != ReturnStatus.OPEN:
+            await self.orders.update_one(order, {"status": ReturnStatus.OPEN, "closed_at": None})
+        return await self._reload(order_uuid)
+
+    async def delete_order(self, order_uuid: UUID) -> None:
+        order = await self._get_open_order(order_uuid)
         file_names = await self.images.file_names_for_order(order_uuid)
         keys = await self.images.keys_for_order(order_uuid)
         await self.orders.delete_one(order)
@@ -103,12 +124,13 @@ class ReturnOrderService:
         await self.namer.renumber_quietly(keys)
 
     async def add_line(self, order_uuid: UUID, data: OrderLineCreate) -> ReturnOrderOut:
-        await self._get_order(order_uuid)
+        await self._get_open_order(order_uuid)
         await self._ensure_sku_exists(data.sku_id)
         await self.lines.create_one({**data.model_dump(), "return_order_uuid": order_uuid})
         return await self._reload(order_uuid)
 
     async def update_line(self, order_uuid: UUID, line_uuid: UUID, data: OrderLineUpdate) -> ReturnOrderOut:
+        await self._get_open_order(order_uuid)
         line = await self._get_line(order_uuid, line_uuid)
         # Only the free-text fields may be cleared; a null on a required field is ignored.
         changes = {
@@ -127,6 +149,7 @@ class ReturnOrderService:
         return await self._reload(order_uuid)
 
     async def delete_line(self, order_uuid: UUID, line_uuid: UUID) -> ReturnOrderOut:
+        await self._get_open_order(order_uuid)
         line = await self._get_line(order_uuid, line_uuid)
         file_names = await self.images.file_names_for_line(line_uuid)
         keys = await self.images.keys_for_line(line_uuid)
@@ -149,6 +172,7 @@ class ReturnOrderService:
         return data, content_type
 
     async def add_images(self, order_uuid: UUID, line_uuid: UUID, uploads: list[UploadFile]) -> ReturnOrderOut:
+        await self._get_open_order(order_uuid)
         await self._get_line(order_uuid, line_uuid)
         if not uploads:
             raise BadRequestException("No files were sent")
@@ -181,6 +205,7 @@ class ReturnOrderService:
         return await self._reload(order_uuid)
 
     async def delete_image(self, order_uuid: UUID, line_uuid: UUID, image_uuid: UUID) -> ReturnOrderOut:
+        await self._get_open_order(order_uuid)
         await self._get_line(order_uuid, line_uuid)
         image = await self.images.get_one(uuid=image_uuid, order_line_uuid=line_uuid)
         if not image:

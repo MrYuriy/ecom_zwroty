@@ -7,12 +7,12 @@ Never run against production.
 import argparse
 import asyncio
 import random
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import func, select
 
 from app.database.postgres import async_session
-from app.enums.return_order import CarrierType, GoodsCondition
+from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
 from app.enums.user import RoleEnum
 from app.models import OrderLine, ReturnOrder, Sku, User
 
@@ -101,7 +101,16 @@ async def seed(force: bool) -> None:
         await session.flush()
 
         def add_order(return_date: date, bo: str | None, tempo: str | None) -> ReturnOrder:
-            order = ReturnOrder(bo_wms_number=bo, tempo_number=tempo, return_date=return_date, operator_id=operator.id)
+            # Past returns are finished (closed, ready for the report); today's are still being received.
+            closed = return_date < date.today()
+            order = ReturnOrder(
+                bo_wms_number=bo,
+                tempo_number=tempo,
+                return_date=return_date,
+                operator_id=operator.id,
+                status=ReturnStatus.CLOSED if closed else ReturnStatus.OPEN,
+                closed_at=datetime.now() if closed else None,
+            )
             session.add(order)
             return order
 

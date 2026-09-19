@@ -48,6 +48,16 @@ async def update_order(
     return await service.update_order(order_uuid, data)
 
 
+@router.post("/{order_uuid}/close", response_model=ReturnOrderOut)
+async def close_order(order_uuid: UUID, service: ReturnOrderServiceDep, _: CurrentUserDep) -> ReturnOrderOut:
+    return await service.close_order(order_uuid)
+
+
+@router.post("/{order_uuid}/reopen", response_model=ReturnOrderOut)
+async def reopen_order(order_uuid: UUID, service: ReturnOrderServiceDep, _: CurrentUserDep) -> ReturnOrderOut:
+    return await service.reopen_order(order_uuid)
+
+
 @router.delete("/{order_uuid}", status_code=204)
 async def delete_order(order_uuid: UUID, service: ReturnOrderServiceDep, _: CurrentUserDep) -> Response:
     await service.delete_order(order_uuid)
