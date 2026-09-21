@@ -5,7 +5,12 @@ LINE = {"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "
 
 @pytest_asyncio.fixture
 async def sku_id(client, operator_headers) -> int:
-    payload = {"trade_reference": "82376357", "ean": "5900000000001", "product_name": "Dysk", "is_parametrized": True}
+    payload = {
+        "trade_reference": "82376357",
+        "eans": ["5900000000001"],
+        "product_name": "Dysk",
+        "is_parametrized": True,
+    }
     return (await client.post("/api/skus", json=payload, headers=operator_headers)).json()["id"]
 
 

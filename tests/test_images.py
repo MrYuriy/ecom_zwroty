@@ -10,7 +10,7 @@ LINE = {"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "
 
 @pytest_asyncio.fixture
 async def line(client, operator_headers) -> dict:
-    sku = {"trade_reference": "82376357", "ean": "5900000000001", "product_name": "Dysk"}
+    sku = {"trade_reference": "82376357", "eans": ["5900000000001"], "product_name": "Dysk"}
     sku_id = (await client.post("/api/skus", json=sku, headers=operator_headers)).json()["id"]
     order = (await client.post("/api/returns", json={}, headers=operator_headers)).json()
     order = (

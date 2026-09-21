@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from app.database.postgres import async_session
 from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
 from app.enums.user import RoleEnum
-from app.models import OrderLine, ReturnOrder, Sku, User
+from app.models import OrderLine, ReturnOrder, Sku, SkuEan, User
 
 P, L = CarrierType.PARCEL, CarrierType.PALLET
 D, F = GoodsCondition.DAMAGED, GoodsCondition.FULL_VALUE
@@ -94,7 +94,10 @@ async def seed(force: bool) -> None:
             sku = (await session.execute(select(Sku).where(Sku.trade_reference == reference))).scalar_one_or_none()
             if not sku:
                 sku = Sku(
-                    trade_reference=reference, ean=ean13(reference), product_name=name, is_parametrized=parametrized
+                    trade_reference=reference,
+                    eans=[SkuEan(ean=ean13(reference))],
+                    product_name=name,
+                    is_parametrized=parametrized,
                 )
                 session.add(sku)
             skus[reference] = sku

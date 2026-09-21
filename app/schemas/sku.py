@@ -1,18 +1,46 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+_MAX_EAN_LENGTH = 32
+
+
+def clean_eans(values: list[str] | None) -> list[str] | None:
+    """Trim, drop blanks and duplicates (keeping order)."""
+    if values is None:
+        return None
+    cleaned: list[str] = []
+    for value in values:
+        code = (value or "").strip()
+        if not code or code in cleaned:
+            continue
+        if len(code) > _MAX_EAN_LENGTH:
+            raise ValueError(f"EAN longer than {_MAX_EAN_LENGTH} characters: {code}")
+        cleaned.append(code)
+    return cleaned
 
 
 class SkuCreate(BaseModel):
     trade_reference: str = Field(min_length=1, max_length=64)
-    ean: str | None = Field(None, max_length=32)
+    eans: list[str] = Field(default_factory=list)
     product_name: str = Field(min_length=1, max_length=500)
     is_parametrized: bool = False
+
+    @field_validator("eans")
+    @classmethod
+    def _clean(cls, value: list[str] | None) -> list[str] | None:
+        return clean_eans(value)
 
 
 class SkuUpdate(BaseModel):
     trade_reference: str | None = Field(None, min_length=1, max_length=64)
-    ean: str | None = Field(None, max_length=32)
+    # None keeps the codes as they are; a list replaces them (an empty list removes all).
+    eans: list[str] | None = None
     product_name: str | None = Field(None, min_length=1, max_length=500)
     is_parametrized: bool | None = None
+
+    @field_validator("eans")
+    @classmethod
+    def _clean(cls, value: list[str] | None) -> list[str] | None:
+        return clean_eans(value)
 
 
 class SkuOut(BaseModel):
@@ -20,6 +48,11 @@ class SkuOut(BaseModel):
 
     id: int
     trade_reference: str
-    ean: str | None
+    eans: list[str]
     product_name: str
     is_parametrized: bool
+
+    @field_validator("eans", mode="before")
+    @classmethod
+    def _codes(cls, value: list) -> list[str]:
+        return [item if isinstance(item, str) else item.ean for item in value]

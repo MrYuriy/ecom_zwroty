@@ -29,12 +29,21 @@ New feature = one vertical: `model → migration → repository → schema → s
 `00001` users · `00002` sku_registry · `00003` return_orders + order_lines · `00004` line_images ·
 `00005` drops the SUPERVISOR role (roles: OPERATOR, ADMIN) · `00006` wms_orders ·
 `00007` users log in with `wms_login` (case-insensitive) instead of an e-mail ·
-`00008` return status + export statuses. Hand-written,
+`00008` return status + export statuses · `00009` a SKU has many EANs (`sku_eans`, each code unique) + `sku_imports`.
+Hand-written,
 `down_revision` = previous, run on container start (`entrypoint.sh`).
 
 ## Tests
 sqlite in-memory (`tests/conftest.py`, add new tables to `TEST_TABLES`); `admin_headers` /
 `operator_headers` fixtures log in through the API.
+
+## SKU import
+Admin uploads the WMS export (`sku_ean.json`: `{"supplier_sku_id": EAN, "sku_id": reference, "description", "ecommerce": "Y|N"}` records)
+on the "Produkty" page → `POST /api/sku-imports` (202) saves it to a temp file and runs `services/sku_import.py`
+as a BackgroundTask; the page polls `GET /api/sku-imports/latest`. Upsert only, nothing is deleted:
+new SKUs/codes are added, names updated, `ecommerce` → `is_parametrized` (a missing flag keeps the stored value),
+an EAN listed under another SKU moves there (last row in the file wins). Bulk ORM insert/update in batches, one
+transaction; ~600k rows. Manual SKU edits never move a code (409). One import at a time.
 
 ## Line images
 Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; gitignored), named

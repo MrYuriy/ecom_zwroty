@@ -14,12 +14,15 @@ from app.core.security.password import hash_password  # noqa: E402
 from app.database.postgres import get_session  # noqa: E402
 from app.enums.user import RoleEnum  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import Base, LineImage, OrderLine, ReturnOrder, Sku, User, WmsOrder  # noqa: E402
+from app.models import Base, LineImage, OrderLine, ReturnOrder, Sku, SkuEan, SkuImport, User, WmsOrder  # noqa: E402
+from app.services.sku_import import get_session_factory  # noqa: E402
 
 # Order matters for FKs.
 TEST_TABLES = [
     User.__table__,
     Sku.__table__,
+    SkuEan.__table__,
+    SkuImport.__table__,
     ReturnOrder.__table__,
     OrderLine.__table__,
     LineImage.__table__,
@@ -60,6 +63,8 @@ async def app(session_factory):
             yield session
 
     application.dependency_overrides[get_session] = _override_get_session
+    # Background jobs open their own sessions; keep them on the test database.
+    application.dependency_overrides[get_session_factory] = lambda: session_factory
     return application
 
 
