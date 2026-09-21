@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 
 from app.dependencies import CurrentUserDep, SkuServiceDep
 from app.schemas.common import Page
-from app.schemas.sku import SkuCreate, SkuOut, SkuUpdate
+from app.schemas.sku import SkuCreate, SkuOut, SkuUpdate, SkuUsageOut
 
 router = APIRouter(prefix="/skus", tags=["SKU"])
 
@@ -36,3 +36,15 @@ async def create_sku(data: SkuCreate, service: SkuServiceDep, _: CurrentUserDep)
 @router.patch("/{sku_id}", response_model=SkuOut)
 async def update_sku(sku_id: int, data: SkuUpdate, service: SkuServiceDep, _: CurrentUserDep) -> SkuOut:
     return await service.update_sku(sku_id, data)
+
+
+@router.get("/{sku_id}/usage", response_model=list[SkuUsageOut])
+async def get_sku_usage(sku_id: int, service: SkuServiceDep, _: CurrentUserDep) -> list[SkuUsageOut]:
+    return await service.usage(sku_id)
+
+
+@router.delete("/{sku_id}", status_code=204)
+async def delete_sku(sku_id: int, service: SkuServiceDep, _: CurrentUserDep) -> Response:
+    """409 while any return still has a line with this SKU (see /usage for which ones)."""
+    await service.delete_sku(sku_id)
+    return Response(status_code=204)

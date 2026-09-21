@@ -15,6 +15,14 @@ class ObjectAlreadyExistsException(Exception):
         super().__init__(msg)
 
 
+class ConflictException(Exception):
+    """The action clashes with existing data (e.g. deleting a record that others still point at)."""
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
+
+
 class BadRequestException(Exception):
     def __init__(self, message: str) -> None:
         self.message = message

@@ -1,5 +1,6 @@
 from app.core.exc.base import (
     BadRequestException,
+    ConflictException,
     ForbiddenException,
     ObjectAlreadyExistsException,
     ObjectNotFoundException,
@@ -8,6 +9,7 @@ from app.core.exc.base import (
 
 __all__ = [
     "BadRequestException",
+    "ConflictException",
     "ForbiddenException",
     "ObjectAlreadyExistsException",
     "ObjectNotFoundException",

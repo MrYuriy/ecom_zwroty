@@ -1,13 +1,13 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exc import ObjectAlreadyExistsException, ObjectNotFoundException
+from app.core.exc import ConflictException, ObjectAlreadyExistsException, ObjectNotFoundException
 from app.database.postgres import get_session
 from app.models.sku import Sku, SkuEan
 from app.repositories.return_order import LineImageRepository
 from app.repositories.sku import SkuRepository
 from app.schemas.common import Page
-from app.schemas.sku import SkuCreate, SkuOut, SkuUpdate
+from app.schemas.sku import SkuCreate, SkuOut, SkuUpdate, SkuUsageOut
 from app.services.image_naming import ImageNamer
 from app.services.image_storage import ImageStorage
 
@@ -71,6 +71,31 @@ class SkuService:
         if not sku:
             raise ObjectNotFoundException(sku_id, "SKU")
         return SkuOut.model_validate(sku)
+
+    async def usage(self, sku_id: int) -> list[SkuUsageOut]:
+        if not await self.skus.get_one(id=sku_id):
+            raise ObjectNotFoundException(sku_id, "SKU")
+        return [
+            SkuUsageOut(
+                uuid=order.uuid,
+                bo_wms_number=order.bo_wms_number,
+                tempo_number=order.tempo_number,
+                return_date=order.return_date,
+                status=order.status,
+                lines=lines,
+            )
+            for order, lines in await self.skus.usage(sku_id)
+        ]
+
+    async def delete_sku(self, sku_id: int) -> None:
+        sku = await self.skus.get_one(id=sku_id)
+        if not sku:
+            raise ObjectNotFoundException(sku_id, "SKU")
+        # Order lines keep their SKU (the report needs it), so a used product stays.
+        used_in = await self.skus.usage(sku_id)
+        if used_in:
+            raise ConflictException(f"SKU {sku.trade_reference} is used in {len(used_in)} return(s)")
+        await self.skus.delete_one(sku)
 
     async def get_by_ean(self, ean: str) -> SkuOut:
         sku = await self.skus.get_by_ean(ean.strip())

@@ -60,3 +60,43 @@ async def test_update_replaces_codes_and_keeps_required_fields_on_null(client, o
 
 async def test_sku_requires_auth(client):
     assert (await client.get("/api/skus")).status_code == 401
+
+
+async def test_delete_unused_sku_removes_it_with_its_codes(client, operator_headers):
+    created = (await client.post("/api/skus", json=SKU, headers=operator_headers)).json()
+    assert (await client.get(f"/api/skus/{created['id']}/usage", headers=operator_headers)).json() == []
+
+    deleted = await client.delete(f"/api/skus/{created['id']}", headers=operator_headers)
+    assert deleted.status_code == 204
+    assert (await client.get(f"/api/skus/{created['id']}", headers=operator_headers)).status_code == 404
+    assert (await client.get("/api/skus/by-ean/5901234123457", headers=operator_headers)).status_code == 404
+    # The freed code can go to a new product.
+    assert (await client.post("/api/skus", json=SKU, headers=operator_headers)).status_code == 201
+
+
+async def test_sku_used_in_a_return_is_not_deleted_and_lists_the_returns(client, operator_headers):
+    sku_id = (await client.post("/api/skus", json=SKU, headers=operator_headers)).json()["id"]
+    line = {"sku_id": sku_id, "quantity": 1, "carrier_type": "PARCEL", "goods_condition": "FULL_VALUE"}
+    orders = []
+    for number in ("356902", None):
+        order = (await client.post("/api/returns", json={"bo_wms_number": number}, headers=operator_headers)).json()
+        for _ in range(2 if number else 1):
+            await client.post(f"/api/returns/{order['uuid']}/lines", json=line, headers=operator_headers)
+        orders.append(order)
+
+    deleted = await client.delete(f"/api/skus/{sku_id}", headers=operator_headers)
+    assert deleted.status_code == 409
+    assert (await client.get(f"/api/skus/{sku_id}", headers=operator_headers)).status_code == 200
+
+    usage = (await client.get(f"/api/skus/{sku_id}/usage", headers=operator_headers)).json()
+    by_uuid = {item["uuid"]: item for item in usage}
+    assert set(by_uuid) == {order["uuid"] for order in orders}
+    assert by_uuid[orders[0]["uuid"]]["lines"] == 2
+    assert by_uuid[orders[0]["uuid"]]["bo_wms_number"] == "356902"
+    assert by_uuid[orders[1]["uuid"]]["lines"] == 1
+    assert by_uuid[orders[1]["uuid"]]["status"] == "OPEN"
+
+
+async def test_delete_or_usage_of_unknown_sku_is_404(client, operator_headers):
+    assert (await client.delete("/api/skus/999", headers=operator_headers)).status_code == 404
+    assert (await client.get("/api/skus/999/usage", headers=operator_headers)).status_code == 404

@@ -1,4 +1,9 @@
+from datetime import date
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.enums.return_order import ReturnStatus
 
 _MAX_EAN_LENGTH = 32
 
@@ -56,3 +61,14 @@ class SkuOut(BaseModel):
     @classmethod
     def _codes(cls, value: list) -> list[str]:
         return [item if isinstance(item, str) else item.ean for item in value]
+
+
+class SkuUsageOut(BaseModel):
+    """A return that uses the SKU (so the SKU can't be deleted)."""
+
+    uuid: UUID
+    bo_wms_number: str | None
+    tempo_number: str | None
+    return_date: date
+    status: ReturnStatus
+    lines: int

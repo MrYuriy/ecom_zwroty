@@ -1,6 +1,7 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.return_order import OrderLine, ReturnOrder
 from app.models.sku import Sku, SkuEan
 from app.repositories.base import BaseRepository
 
@@ -25,6 +26,17 @@ class SkuRepository(BaseRepository[Sku]):
         if sku_id is not None:
             query = query.where(SkuEan.sku_id != sku_id)
         return sorted((await self.session.execute(query)).scalars().all())
+
+    async def usage(self, sku_id: int) -> list[tuple[ReturnOrder, int]]:
+        """Returns that have lines with this SKU, newest first, with the number of such lines."""
+        query = (
+            select(ReturnOrder, func.count(OrderLine.uuid))
+            .join(OrderLine, OrderLine.return_order_uuid == ReturnOrder.uuid)
+            .where(OrderLine.sku_id == sku_id)
+            .group_by(ReturnOrder.uuid)
+            .order_by(ReturnOrder.return_date.desc(), ReturnOrder.created_at.desc())
+        )
+        return [(order, lines) for order, lines in (await self.session.execute(query)).all()]
 
     async def search(self, query: str | None, page: int, limit: int) -> tuple[list[Sku], int]:
         condition = None

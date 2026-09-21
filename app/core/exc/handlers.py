@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.exc.base import (
     BadRequestException,
+    ConflictException,
     ForbiddenException,
     ObjectAlreadyExistsException,
     ObjectNotFoundException,
@@ -12,6 +13,7 @@ from app.core.exc.base import (
 _STATUS_BY_EXCEPTION: dict[type[Exception], int] = {
     ObjectNotFoundException: 404,
     ObjectAlreadyExistsException: 409,
+    ConflictException: 409,
     BadRequestException: 400,
     UnauthorizedException: 401,
     ForbiddenException: 403,
