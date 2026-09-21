@@ -20,14 +20,14 @@ async function init() {
     document.title = "Edycja produktu — Zwroty e-com";
     const sku = await api(`/skus/${encodeURIComponent(skuId)}`);
     form.trade_reference.value = sku.trade_reference;
-    form.ean.value = sku.ean || "";
+    form.eans.value = sku.eans.join("\n");
     form.product_name.value = sku.product_name;
     form.is_parametrized.checked = sku.is_parametrized;
     form.product_name.focus();
     return;
   }
 
-  form.ean.value = param("ean") || "";
+  form.eans.value = param("ean") || "";
   form.trade_reference.value = param("ref") || "";
   (form.trade_reference.value ? form.product_name : form.trade_reference).focus();
 }
@@ -36,7 +36,10 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const body = {
     trade_reference: form.trade_reference.value.trim(),
-    ean: nullIfBlank(form.ean.value),
+    eans: form.eans.value
+      .split(/[\s,;]+/)
+      .map((code) => code.trim())
+      .filter(Boolean),
     product_name: form.product_name.value.trim(),
     is_parametrized: form.is_parametrized.checked,
   };

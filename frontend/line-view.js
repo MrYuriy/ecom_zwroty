@@ -18,7 +18,7 @@ function renderDetails(order, line) {
     `Zwrot ${orNoNumber(order.bo_wms_number)} / ${orNoNumber(order.tempo_number)} · ${formatDate(order.return_date)}`;
   setText("#v-reference", line.sku.trade_reference);
   setText("#v-product", line.sku.product_name);
-  setText("#v-ean", line.sku.ean);
+  setText("#v-ean", line.sku.eans.join(", "));
   setText("#v-param", line.sku.is_parametrized ? "tak" : "nie");
   setText("#v-quantity", line.quantity);
   setText("#v-carrier", LABELS.carrier[line.carrier_type]);

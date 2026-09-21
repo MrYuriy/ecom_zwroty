@@ -37,7 +37,7 @@ function showLineStep(sku) {
   $("#line-sku").replaceChildren(
     h("strong", {}, sku.trade_reference),
     h("span", {}, sku.product_name),
-    sku.ean ? h("span", { class: "muted" }, `EAN ${sku.ean}`) : null,
+    sku.eans.length ? h("span", { class: "muted", title: sku.eans.join("\n") }, `EAN ${eanSummary(sku.eans, 1)}`) : null,
     h(
       "span",
       { class: `badge ${sku.is_parametrized ? "success" : "neutral"}` },

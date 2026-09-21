@@ -14,6 +14,19 @@
         <a class="btn" href="sku-form.html">+ Nowy produkt</a>
       </div>
 
+      <section id="import-card" class="card hidden" aria-labelledby="import-title">
+        <h2 id="import-title">Import z pliku</h2>
+        <p class="muted">
+          Plik z kodami SKU/EAN (np. eksport z WMS). Dodaje nowe produkty i kody, aktualizuje nazwy i
+          „Produkt sparametryzowany” (pole ecommerce). Niczego nie usuwa.
+        </p>
+        <form id="import-form" class="scan-row">
+          <input id="import-file" name="file" type="file" accept=".json,application/json" aria-label="Plik SKU/EAN" />
+          <button type="submit" id="import-submit">Importuj</button>
+        </form>
+        <p id="import-status" class="field-hint" role="status" aria-live="polite"></p>
+      </section>
+
       <section class="card">
         <form id="search" class="scan-row">
           <input name="q" type="search" placeholder="Szukaj po referencji, EAN lub nazwie" aria-label="Szukaj produktu" />

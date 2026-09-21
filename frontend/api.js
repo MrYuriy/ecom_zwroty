@@ -234,6 +234,13 @@ function statusBadge(status) {
   return h("span", { class: `badge ${status === "CLOSED" ? "neutral" : "warning"}` }, LABELS.status[status]);
 }
 
+// "5901234123457, 2000101723161 +3": a product can have dozens of codes.
+function eanSummary(eans, shown = 2) {
+  if (!eans || !eans.length) return "—";
+  const rest = eans.length - shown;
+  return eans.slice(0, shown).join(", ") + (rest > 0 ? ` +${rest}` : "");
+}
+
 function conditionBadge(condition) {
   return h("span", { class: `badge ${condition === "DAMAGED" ? "danger" : "success"}` }, LABELS.condition[condition]);
 }
