@@ -15,6 +15,8 @@ function skuRow(sku) {
       "td",
       { class: "actions-cell" },
       h("a", { class: "btn secondary small", href: `sku-form.html?id=${encodeURIComponent(sku.id)}` }, "Edytuj"),
+      " ",
+      h("button", { class: "danger small", onclick: (e) => deleteSku(sku, e.currentTarget) }, "Usuń"),
     ),
   );
 }
@@ -34,6 +36,59 @@ async function loadSkus() {
   } catch (err) {
     showError(err);
   }
+}
+
+// ---------- delete ----------
+function hideUsage() {
+  $("#usage").classList.add("hidden");
+  $("#usage").replaceChildren();
+}
+
+function usageItem(order) {
+  const text =
+    `${formatDate(order.return_date)} · BO/WMS ${orNoNumber(order.bo_wms_number)} · ` +
+    `Tempo ${orNoNumber(order.tempo_number)} · pozycji: ${order.lines} · ${LABELS.status[order.status]}`;
+  return h("li", {}, h("a", { href: `return.html?id=${encodeURIComponent(order.uuid)}` }, text));
+}
+
+function showUsage(sku, orders) {
+  const box = $("#usage");
+  box.replaceChildren(
+    h(
+      "p",
+      {},
+      h("strong", {}, `Nie można usunąć produktu ${sku.trade_reference}`),
+      ` — jest użyty w zwrotach (${orders.length}). Usuń go najpierw z tych zwrotów:`,
+    ),
+    h("ul", {}, orders.map(usageItem)),
+    h("button", { type: "button", class: "secondary small", onclick: hideUsage }, "Zamknij"),
+  );
+  box.classList.remove("hidden");
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function deleteSku(sku, button) {
+  hideUsage();
+  await withBusy(button, async () => {
+    try {
+      const orders = await api(`/skus/${sku.id}/usage`);
+      if (orders.length) {
+        showUsage(sku, orders);
+        return;
+      }
+      if (!confirm(`Usunąć produkt ${sku.trade_reference} (${sku.product_name}) razem z jego kodami EAN?`)) return;
+      await api(`/skus/${sku.id}`, { method: "DELETE" });
+      toast("Produkt usunięty");
+      loadSkus();
+    } catch (err) {
+      // Someone added it to a return in the meantime: show where.
+      if (err.status === 409) {
+        showUsage(sku, await api(`/skus/${sku.id}/usage`).catch(() => []));
+        return;
+      }
+      showError(err);
+    }
+  });
 }
 
 $("#search").addEventListener("submit", (event) => {

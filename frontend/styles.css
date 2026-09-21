@@ -613,6 +613,15 @@ td.actions-cell {
   margin: 0 0 8px;
 }
 
+.notice ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.notice li + li {
+  margin-top: 4px;
+}
+
 /* ---------- line photos ---------- */
 .thumbs {
   display: flex;
