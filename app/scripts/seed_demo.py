@@ -1,4 +1,4 @@
-"""Fill a dev database with demo SKUs and returns: python -m app.scripts.seed_demo [--force].
+"""Fill a dev database with demo SKUs and returns: python -m app.scripts.seed_demo [--force] [--busy-days N].
 
 Includes the rows of the sample returns report, so an export can be compared against it.
 Never run against production.
@@ -7,9 +7,11 @@ Never run against production.
 import argparse
 import asyncio
 import random
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.postgres import async_session
 from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
@@ -76,7 +78,69 @@ def ean13(reference: str) -> str:
     return body + str((10 - total % 10) % 10)
 
 
-async def seed(force: bool) -> None:
+async def ensure_skus(session: AsyncSession) -> dict[str, Sku]:
+    """The demo products, kept as they are when the database already has them."""
+    skus: dict[str, Sku] = {}
+    for reference, name, parametrized in SKUS:
+        sku = (await session.execute(select(Sku).where(Sku.trade_reference == reference))).scalar_one_or_none()
+        if not sku:
+            sku = Sku(
+                trade_reference=reference,
+                eans=[SkuEan(ean=ean13(reference))],
+                product_name=name,
+                is_parametrized=parametrized,
+            )
+            session.add(sku)
+        skus[reference] = sku
+    await session.flush()
+    return skus
+
+
+def random_line(rng: random.Random, sku: Sku) -> OrderLine:
+    carrier = L if rng.random() < 0.25 else P
+    damaged = rng.random() < 0.45
+    return OrderLine(
+        sku=sku,
+        quantity=rng.randint(2, 12) if carrier is L else 1,
+        carrier_type=carrier,
+        goods_condition=D if damaged else F,
+        damage_description=rng.choice(DAMAGES) if damaged else None,
+        remarks=rng.choice(REMARKS) if rng.random() < 0.3 else None,
+    )
+
+
+def add_sample_returns(add_order: Callable[[date, str | None, str | None], ReturnOrder], skus: dict[str, Sku]) -> None:
+    """One return per row of the sample report, so an export can be compared against it."""
+    for day, bo, tempo, reference, remarks, qty, carrier, condition, damage in SAMPLE_ROWS:
+        order = add_order(date.fromisoformat(day), bo, tempo)
+        order.lines.append(
+            OrderLine(
+                sku=skus[reference],
+                quantity=qty,
+                carrier_type=carrier,
+                goods_condition=condition,
+                damage_description=damage,
+                remarks=remarks,
+            )
+        )
+
+
+def add_busy_days(
+    rng: random.Random,
+    add_random_order: Callable[[date, int], None],
+    today: date,
+    busy_days: int,
+) -> int:
+    """Recent days packed with returns, so the daily PDF spans several pages (17 rows per page)."""
+    orders = 0
+    for day_back in range(busy_days):
+        for _ in range(rng.randint(12, 16)):
+            add_random_order(today - timedelta(days=day_back), 5)
+            orders += 1
+    return orders
+
+
+async def seed(force: bool, busy_days: int) -> None:
     rng = random.Random(42)
     async with async_session() as session:
         operator = (
@@ -89,19 +153,7 @@ async def seed(force: bool) -> None:
         if existing_orders and not force:
             raise SystemExit(f"{existing_orders} return orders already exist — pass --force to add demo data anyway.")
 
-        skus: dict[str, Sku] = {}
-        for reference, name, parametrized in SKUS:
-            sku = (await session.execute(select(Sku).where(Sku.trade_reference == reference))).scalar_one_or_none()
-            if not sku:
-                sku = Sku(
-                    trade_reference=reference,
-                    eans=[SkuEan(ean=ean13(reference))],
-                    product_name=name,
-                    is_parametrized=parametrized,
-                )
-                session.add(sku)
-            skus[reference] = sku
-        await session.flush()
+        skus = await ensure_skus(session)
 
         def add_order(return_date: date, bo: str | None, tempo: str | None) -> ReturnOrder:
             # Past returns are finished (closed, ready for the report); today's are still being received.
@@ -117,45 +169,31 @@ async def seed(force: bool) -> None:
             session.add(order)
             return order
 
-        for day, bo, tempo, reference, remarks, qty, carrier, condition, damage in SAMPLE_ROWS:
-            order = add_order(date.fromisoformat(day), bo, tempo)
-            order.lines.append(
-                OrderLine(
-                    sku=skus[reference],
-                    quantity=qty,
-                    carrier_type=carrier,
-                    goods_condition=condition,
-                    damage_description=damage,
-                    remarks=remarks,
-                )
-            )
+        add_sample_returns(add_order, skus)
 
         references = list(skus)
         today = date.today()
-        for _ in range(25):
+
+        def add_random_order(return_date: date, max_lines: int) -> None:
             has_numbers = rng.random() > 0.2
             order = add_order(
-                today - timedelta(days=rng.randint(0, 13)),
+                return_date,
                 str(rng.randint(350000, 369999)) if has_numbers else None,
                 f"25{rng.randint(300, 365)}L{rng.randint(1, 40000)}" if has_numbers and rng.random() > 0.15 else None,
             )
-            carrier = L if rng.random() < 0.2 else P
-            for reference in rng.sample(references, rng.randint(1, 4)):
-                damaged = rng.random() < 0.45
-                order.lines.append(
-                    OrderLine(
-                        sku=skus[reference],
-                        quantity=rng.randint(2, 12) if carrier is L else 1,
-                        carrier_type=carrier,
-                        goods_condition=D if damaged else F,
-                        damage_description=rng.choice(DAMAGES) if damaged else None,
-                        remarks=rng.choice(REMARKS) if rng.random() < 0.3 else None,
-                    )
-                )
+            for reference in rng.sample(references, rng.randint(1, max_lines)):
+                order.lines.append(random_line(rng, skus[reference]))
+
+        for _ in range(25):
+            add_random_order(today - timedelta(days=rng.randint(0, 13)), 4)
+
+        busy_orders = add_busy_days(rng, add_random_order, today, busy_days)
 
         await session.commit()
 
     print(f"Seeded {len(SKUS)} SKUs, {len(SAMPLE_ROWS)} sample-report returns and 25 random returns.")
+    if busy_days:
+        print(f"Plus {busy_orders} returns spread over the last {busy_days} day(s) for the daily PDF.")
     print("EANs to try in the scanner field:")
     for reference in ("82376357", "92716869", "45603124"):
         print(f"  {ean13(reference)}  ({reference})")
@@ -165,7 +203,14 @@ async def seed(force: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fill a dev database with demo returns.")
     parser.add_argument("--force", action="store_true", help="add demo data even if returns already exist")
-    asyncio.run(seed(parser.parse_args().force))
+    parser.add_argument(
+        "--busy-days",
+        type=int,
+        default=0,
+        help="also fill this many recent days with returns, enough for a multi-page daily PDF",
+    )
+    args = parser.parse_args()
+    asyncio.run(seed(args.force, args.busy_days))
 
 
 if __name__ == "__main__":
