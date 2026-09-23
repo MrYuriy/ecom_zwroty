@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import contains_eager, selectinload
 
 from app.models.line_image import LineImage
 from app.models.return_order import OrderLine, ReturnOrder
@@ -21,6 +21,17 @@ class ReturnOrderRepository(BaseRepository[ReturnOrder]):
     async def get_with_lines(self, order_uuid: UUID) -> ReturnOrder | None:
         query = select(ReturnOrder).where(ReturnOrder.uuid == order_uuid).options(_WITH_LINES)
         return (await self.session.execute(query)).scalar_one_or_none()
+
+    async def lines_for_day(self, day: date) -> list[OrderLine]:
+        """Every item received that day, returns in the order they were created."""
+        query = (
+            select(OrderLine)
+            .join(OrderLine.return_order)
+            .options(contains_eager(OrderLine.return_order), selectinload(OrderLine.sku))
+            .where(ReturnOrder.return_date == day)
+            .order_by(ReturnOrder.created_at, OrderLine.created_at)
+        )
+        return list((await self.session.execute(query)).scalars().all())
 
     async def search(
         self,

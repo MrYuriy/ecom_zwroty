@@ -45,6 +45,15 @@ new SKUs/codes are added, names updated, `ecommerce` → `is_parametrized` (a mi
 an EAN listed under another SKU moves there (last row in the file wins). Bulk ORM insert/update in batches, one
 transaction; ~600k rows. Manual SKU edits never move a code (409). One import at a time.
 
+## Daily PDF form
+"Raport dzienny" prints the paper form PL-FORM-CL-LM-038 ("ZWROTY OD KLIENTÓW") for one day:
+`GET /api/reports/day-pdf?day=YYYY-MM-DD` returns it inline (any logged-in user). The blank form is a
+scan (`app/assets/pdf/zwroty_od_klientow.jpg`, text in FreeSans from the same folder); reportlab only
+draws onto it, so the coordinates in `services/day_report_pdf.py` belong to that scan — re-check the
+rendered pages after touching them. Every line of every return with that `return_date` is printed
+(open and closed), 17 rows per page, BO/WMS written once per return, `Liczba przyjętych` summed by
+carrier on the last page. The cabinet fetches it with the bearer token and shows the blob in a new tab.
+
 ## Line images
 Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; gitignored), named
 `{bo_wms_number or brak}_{trade_reference}_{N}.{ext}` (`services/image_naming.py`). N runs 1..k per
