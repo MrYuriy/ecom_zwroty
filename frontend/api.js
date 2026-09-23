@@ -251,18 +251,68 @@ function nullIfBlank(value) {
   return trimmed === "" ? null : trimmed;
 }
 
+// Page numbers around the current one, plus the first and last: 1 … 4 5 [6] 7 8 … 5967.
+function pageWindow(current, pages, around = 2) {
+  const numbers = new Set([1, pages]);
+  for (let n = current - around; n <= current + around; n++) {
+    if (n >= 1 && n <= pages) numbers.add(n);
+  }
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const items = [];
+  sorted.forEach((n, i) => {
+    if (i && n - sorted[i - 1] > 1) items.push(null);
+    items.push(n);
+  });
+  return items;
+}
+
 function renderPager(container, page, onPage) {
-  container.replaceChildren();
   const pages = Math.max(1, Math.ceil(page.total / page.limit));
-  container.append(
-    h("span", {}, `Razem: ${page.total}`),
-    h(
-      "div",
-      { class: "actions" },
-      h("button", { class: "secondary small", disabled: page.page <= 1, onclick: () => onPage(page.page - 1) }, "‹ Poprzednia"),
-      h("span", {}, `${page.page} / ${pages}`),
-      h("button", { class: "secondary small", disabled: page.page >= pages, onclick: () => onPage(page.page + 1) }, "Następna ›"),
-    ),
+  const current = Math.min(page.page, pages);
+  const go = (n) => {
+    const target = Math.min(Math.max(1, n), pages);
+    if (target !== current) onPage(target);
+  };
+  const button = (label, target, title, attrs = {}) =>
+    h("button", { type: "button", class: "secondary small", title, onclick: () => go(target), ...attrs }, label);
+
+  const numbers = pageWindow(current, pages).map((n) =>
+    n === null
+      ? h("span", { class: "pager-gap" }, "…")
+      : button(n.toLocaleString("pl-PL"), n, `Strona ${n}`, {
+          class: n === current ? "small pager-num pager-current" : "secondary small pager-num",
+          "aria-current": n === current ? "page" : null,
+        }),
+  );
+
+  const jump = h(
+    "form",
+    {
+      class: "pager-jump",
+      onsubmit: (event) => {
+        event.preventDefault();
+        const n = parseInt(event.currentTarget.page.value, 10);
+        if (Number.isFinite(n)) go(n);
+      },
+    },
+    h("label", {}, "Strona ", h("input", { name: "page", type: "number", inputmode: "numeric", placeholder: String(current), "aria-label": "Numer strony" })),
+    h("button", { type: "submit", class: "secondary small" }, "Przejdź"),
+  );
+
+  container.replaceChildren(
+    h("span", {}, `Razem: ${page.total.toLocaleString("pl-PL")} · strona ${current.toLocaleString("pl-PL")} z ${pages.toLocaleString("pl-PL")}`),
+    pages > 1
+      ? h(
+          "div",
+          { class: "pager-controls" },
+          button("«", 1, "Pierwsza strona", { disabled: current <= 1 }),
+          button("‹", current - 1, "Poprzednia strona", { disabled: current <= 1 }),
+          numbers,
+          button("›", current + 1, "Następna strona", { disabled: current >= pages }),
+          button("»", pages, "Ostatnia strona", { disabled: current >= pages }),
+          jump,
+        )
+      : null,
   );
 }
 

@@ -513,10 +513,67 @@ td.actions-cell {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 12px;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.pager-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pager-controls button {
+  min-width: 34px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pager-current {
+  pointer-events: none;
+}
+
+.pager-gap {
+  padding: 0 4px;
+}
+
+.pager-jump {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.pager-jump label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: normal;
+  color: var(--muted);
+}
+
+.pager-jump input {
+  width: 90px;
+  min-height: 32px;
+  padding: 4px 8px;
+}
+
+/* Phones: « ‹ [current] › » and the jump box on its own row. */
+@media (max-width: 600px) {
+  .pager-num:not(.pager-current),
+  .pager-gap {
+    display: none;
+  }
+
+  .pager-jump {
+    flex-basis: 100%;
+    margin: 4px 0 0;
+  }
 }
 
 /* ---------- login ---------- */
