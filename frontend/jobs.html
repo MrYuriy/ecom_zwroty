@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Joby — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+  </head>
+  <body>
+    <header id="topbar" class="topbar"></header>
+    <main>
+      <div class="page-head">
+        <h1>Joby (czas pracy)</h1>
+      </div>
+
+      <section class="card form-card">
+        <p class="muted">
+          Czas weryfikacji zwrotów w danym dniu, w minutach. Jeden wpis na dzień — zapis nadpisuje
+          poprzedni. Trafia na ostatnią stronę raportu dziennego.
+        </p>
+        <form id="job-form" class="scan-row">
+          <label>
+            Dzień
+            <input name="day" type="date" required />
+          </label>
+          <label>
+            Minuty
+            <input name="minutes" type="number" min="0" max="1440" inputmode="numeric" required />
+          </label>
+          <button type="submit" id="submit">Zapisz</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="table-wrap">
+          <table class="responsive">
+            <thead>
+              <tr>
+                <th>Dzień</th>
+                <th>Minuty</th>
+                <th>Zapisał</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="jobs"></tbody>
+          </table>
+        </div>
+        <div id="pager" class="pager"></div>
+      </section>
+    </main>
+    <script src="api.js?v=dev"></script>
+    <script src="jobs.js?v=dev"></script>
+  </body>
+</html>
