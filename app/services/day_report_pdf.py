@@ -19,6 +19,7 @@ from app.database.postgres import get_session
 from app.enums.return_order import CarrierType, GoodsCondition
 from app.models.return_order import OrderLine
 from app.repositories.return_order import ReturnOrderRepository
+from app.repositories.work_log import WorkLogRepository
 
 _ASSETS = Path(__file__).resolve().parents[1] / "assets" / "pdf"
 _FORM_IMAGE = _ASSETS / "zwroty_od_klientow.jpg"
@@ -36,6 +37,9 @@ _FONT_SIZE = 12
 _NAME_WIDTH = 150
 
 _DAY_XY = (365, 690)
+# The box for the verification time, drawn where the scan's "strona ……" line used to be.
+_TIME_BOX = (48, 76, 551, 106)  # as wide as the table above it
+_TIME_BOX_DIVIDER = 325
 _PARCELS_XY = (92, 147)
 _PALLETS_XY = (270, 147)
 
@@ -81,13 +85,25 @@ def _totals(lines: list[OrderLine]) -> tuple[int, int]:
 class DayReportPdfService:
     def __init__(self, session: AsyncSession) -> None:
         self.returns = ReturnOrderRepository(session)
+        self.work_logs = WorkLogRepository(session)
 
     async def build(self, day: date) -> io.BytesIO:
         lines = await self.returns.lines_for_day(day)
-        return _render(day, lines)
+        return _render(day, lines, await self.work_logs.minutes_for_day(day))
 
 
-def _render(day: date, lines: list[OrderLine]) -> io.BytesIO:
+def _draw_time_box(sheet: canvas.Canvas, minutes: int | None) -> None:
+    """The framed "CZAS WERYFIKACJI ZWROTÓW | MIN:" cells; the number only when the day has a work log."""
+    left, bottom, right, top = _TIME_BOX
+    sheet.rect(left, bottom, right - left, top - bottom)
+    sheet.line(_TIME_BOX_DIVIDER, bottom, _TIME_BOX_DIVIDER, top)
+    text_y = bottom + 10
+    sheet.setFont(_FONT, _FONT_SIZE)
+    sheet.drawString(left + 6, text_y, "CZAS WERYFIKACJI ZWROTÓW")
+    sheet.drawString(_TIME_BOX_DIVIDER + 6, text_y, f"MIN: {minutes}" if minutes is not None else "MIN:")
+
+
+def _render(day: date, lines: list[OrderLine], minutes: int | None = None) -> io.BytesIO:
     _register_font()
     buffer = io.BytesIO()
     sheet = canvas.Canvas(buffer)
@@ -120,6 +136,7 @@ def _render(day: date, lines: list[OrderLine]) -> io.BytesIO:
     sheet.setFont(_FONT, _FONT_SIZE)
     sheet.drawString(*_PARCELS_XY, str(parcels))
     sheet.drawString(*_PALLETS_XY, str(pallets))
+    _draw_time_box(sheet, minutes)
 
     sheet.showPage()
     sheet.save()

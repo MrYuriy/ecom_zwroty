@@ -1,6 +1,9 @@
 from datetime import date
+from unittest.mock import patch
 
 import pytest_asyncio
+
+from app.services import day_report_pdf
 
 LINE = {"quantity": 2, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "damage_description": "rogi"}
 URL = "/api/reports/day-pdf"
@@ -47,3 +50,36 @@ async def test_day_pdf_needs_a_login_and_a_valid_date(client, operator_headers):
     assert (await client.get(URL, params={"day": date.today().isoformat()})).status_code == 401
     assert (await client.get(URL, params={"day": "wczoraj"}, headers=operator_headers)).status_code == 422
     assert (await client.get(URL, headers=operator_headers)).status_code == 422
+
+
+async def test_the_form_shows_the_day_verification_time_when_it_was_written_down(client, operator_headers):
+    """The minutes reach the page; the text itself is checked on the canvas, not in the compressed PDF."""
+    day = date(2026, 9, 22)
+    drawn: list[str] = []
+
+    class FakeCanvas:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        def drawString(self, _x, _y, text) -> None:  # noqa: N802 (reportlab's own name)
+            drawn.append(text)
+
+        def __getattr__(self, _name):
+            return lambda *args, **kwargs: None
+
+    with patch.object(day_report_pdf.canvas, "Canvas", FakeCanvas):
+        day_report_pdf._render(day, [], None)
+        assert "MIN:" in drawn
+
+        day_report_pdf._render(day, [], 145)
+        assert "MIN: 145" in drawn
+
+
+async def test_the_written_down_time_reaches_the_pdf(client, operator_headers):
+    day = "2026-09-22"
+    without = await client.get(URL, params={"day": day}, headers=operator_headers)
+    await client.put(f"/api/work-logs/{day}", json={"minutes": 145}, headers=operator_headers)
+    with_time = await client.get(URL, params={"day": day}, headers=operator_headers)
+
+    assert with_time.status_code == 200
+    assert len(with_time.content) > len(without.content)

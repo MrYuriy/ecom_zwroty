@@ -29,7 +29,8 @@ New feature = one vertical: `model → migration → repository → schema → s
 `00001` users · `00002` sku_registry · `00003` return_orders + order_lines · `00004` line_images ·
 `00005` drops the SUPERVISOR role (roles: OPERATOR, ADMIN) · `00006` wms_orders ·
 `00007` users log in with `wms_login` (case-insensitive) instead of an e-mail ·
-`00008` return status + export statuses · `00009` a SKU has many EANs (`sku_eans`, each code unique) + `sku_imports`.
+`00008` return status + export statuses · `00009` a SKU has many EANs (`sku_eans`, each code unique) + `sku_imports` ·
+`00010` work_logs (minutes per day).
 Hand-written,
 `down_revision` = previous, run on container start (`entrypoint.sh`).
 
@@ -52,7 +53,14 @@ scan (`app/assets/pdf/zwroty_od_klientow.jpg`, text in FreeSans from the same fo
 draws onto it, so the coordinates in `services/day_report_pdf.py` belong to that scan — re-check the
 rendered pages after touching them. Every line of every return with that `return_date` is printed
 (open and closed), 17 rows per page, BO/WMS written once per return, `Liczba przyjętych` summed by
-carrier on the last page. The cabinet fetches it with the bearer token and shows the blob in a new tab.
+carrier on the last page. When the day has a work log, "CZAS WERYFIKACJI ZWROTÓW MIN: n" is printed under
+the signature line. `/app/report-view.html?day=…` opens in a new tab and fetches the PDF with the bearer
+token, so reloading that tab rebuilds the report; nothing is stored or cached (`Cache-Control: no-store`).
+
+## Joby (work logs)
+`/app/jobs.html` — minutes spent verifying returns, **one record per day** (`work_logs.work_date` is the
+primary key); saving the same day again overwrites it and records who did. `GET/PUT/DELETE /api/work-logs/{day}`
+plus a paged list, all for any logged-in user.
 
 ## Line images
 Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; gitignored), named
