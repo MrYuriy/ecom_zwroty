@@ -14,6 +14,7 @@ from app.services.sku import SkuService, get_sku_service
 from app.services.sku_import import SkuImportService, get_sku_import_service
 from app.services.user import UserService, get_user_service
 from app.services.wms_order import WmsOrderService, get_wms_order_service
+from app.services.work_log import WorkLogService, get_work_log_service
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
@@ -23,6 +24,7 @@ ReturnOrderServiceDep = Annotated[ReturnOrderService, Depends(get_return_order_s
 WmsOrderServiceDep = Annotated[WmsOrderService, Depends(get_wms_order_service)]
 IntegrationServiceDep = Annotated[IntegrationService, Depends(get_integration_service)]
 DayReportPdfServiceDep = Annotated[DayReportPdfService, Depends(get_day_report_pdf_service)]
+WorkLogServiceDep = Annotated[WorkLogService, Depends(get_work_log_service)]
 
 CurrentUserDep = Annotated[UserOut, Depends(get_current_user)]
 AdminUserDep = Annotated[UserOut, Depends(require_roles(RoleEnum.ADMIN))]

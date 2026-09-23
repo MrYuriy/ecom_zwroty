@@ -14,7 +14,18 @@ from app.core.security.password import hash_password  # noqa: E402
 from app.database.postgres import get_session  # noqa: E402
 from app.enums.user import RoleEnum  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import Base, LineImage, OrderLine, ReturnOrder, Sku, SkuEan, SkuImport, User, WmsOrder  # noqa: E402
+from app.models import (  # noqa: E402
+    Base,
+    LineImage,
+    OrderLine,
+    ReturnOrder,
+    Sku,
+    SkuEan,
+    SkuImport,
+    User,
+    WmsOrder,
+    WorkLog,
+)
 from app.services.sku_import import get_session_factory  # noqa: E402
 
 # Order matters for FKs.
@@ -27,6 +38,7 @@ TEST_TABLES = [
     OrderLine.__table__,
     LineImage.__table__,
     WmsOrder.__table__,
+    WorkLog.__table__,
 ]
 
 PASSWORD = "Str0ng-pass"
