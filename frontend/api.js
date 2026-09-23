@@ -337,6 +337,7 @@ async function requireUser({ adminOnly = false } = {}) {
 const SECTIONS = {
   "returns.html": ["returns.html", "return.html", "return-form.html", "line.html", "line-view.html"],
   "skus.html": ["skus.html", "sku-form.html"],
+  "report.html": ["report.html", "report-view.html"],
   "users.html": ["users.html", "user-form.html"],
   "wms-orders.html": ["wms-orders.html"],
 };
@@ -354,6 +355,7 @@ function renderTopbar() {
       {},
       link("returns.html", "Zwroty"),
       link("skus.html", "Produkty (SKU)"),
+      link("report.html", "Raport dzienny"),
       currentUser.role === "ADMIN" ? link("wms-orders.html", "Zamówienia WMS") : null,
       currentUser.role === "ADMIN" ? link("users.html", "Użytkownicy") : null,
     ),

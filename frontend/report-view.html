@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Raport dzienny — Zwroty e-com</title>
+    <link rel="stylesheet" href="styles.css?v=dev" />
+    <style>
+      /* The tab holds the PDF alone: reloading it asks the server for a freshly built report. */
+      body {
+        margin: 0;
+      }
+
+      #pdf {
+        display: block;
+        width: 100%;
+        height: 100vh;
+        border: 0;
+      }
+
+      #pdf[hidden],
+      #message[hidden] {
+        display: none;
+      }
+
+      #message {
+        padding: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="message">Przygotowywanie raportu…</p>
+    <iframe id="pdf" title="Raport dzienny" hidden></iframe>
+    <script src="api.js?v=dev"></script>
+    <script src="report-view.js?v=dev"></script>
+  </body>
+</html>
