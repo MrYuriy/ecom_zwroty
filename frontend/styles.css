@@ -429,6 +429,42 @@ td.actions-cell {
     justify-content: flex-end;
   }
 
+  table.responsive td.empty {
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Brand and user on one line, the sections on a swipeable line below. */
+  .topbar {
+    gap: 8px 12px;
+    padding: 8px 12px;
+  }
+
+  .topbar .brand {
+    flex: 1;
+    margin-right: 0;
+  }
+
+  .topbar .user {
+    order: 1;
+  }
+
+  .topbar nav {
+    order: 2;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topbar nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topbar nav a {
+    white-space: nowrap;
+  }
+
   .card {
     padding: 12px;
   }

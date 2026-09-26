@@ -299,21 +299,26 @@ function renderPager(container, page, onPage) {
     h("button", { type: "submit", class: "secondary small" }, "Przejdź"),
   );
 
-  container.replaceChildren(
-    h("span", {}, `Razem: ${page.total.toLocaleString("pl-PL")} · strona ${current.toLocaleString("pl-PL")} z ${pages.toLocaleString("pl-PL")}`),
-    pages > 1
-      ? h(
-          "div",
-          { class: "pager-controls" },
-          button("«", 1, "Pierwsza strona", { disabled: current <= 1 }),
-          button("‹", current - 1, "Poprzednia strona", { disabled: current <= 1 }),
-          numbers,
-          button("›", current + 1, "Następna strona", { disabled: current >= pages }),
-          button("»", pages, "Ostatnia strona", { disabled: current >= pages }),
-          jump,
-        )
-      : null,
+  const summary = h(
+    "span",
+    {},
+    `Razem: ${page.total.toLocaleString("pl-PL")} · strona ${current.toLocaleString("pl-PL")} z ${pages.toLocaleString("pl-PL")}`,
   );
+  container.replaceChildren(summary);
+  if (pages > 1) {
+    container.append(
+      h(
+        "div",
+        { class: "pager-controls" },
+        button("«", 1, "Pierwsza strona", { disabled: current <= 1 }),
+        button("‹", current - 1, "Poprzednia strona", { disabled: current <= 1 }),
+        numbers,
+        button("›", current + 1, "Następna strona", { disabled: current >= pages }),
+        button("»", pages, "Ostatnia strona", { disabled: current >= pages }),
+        jump,
+      ),
+    );
+  }
 }
 
 // ---------- session + top bar ----------
@@ -368,4 +373,6 @@ function renderTopbar() {
       h("button", { class: "secondary small", onclick: () => goToLogin() }, "Wyloguj"),
     ),
   );
+  // On a phone the sections scroll sideways; keep the current one in sight.
+  bar.querySelector("nav a.active")?.scrollIntoView({ inline: "center", block: "nearest" });
 }
