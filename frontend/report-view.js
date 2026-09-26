@@ -21,6 +21,10 @@ async function showReport() {
   const frame = $("#pdf");
   frame.src = url;
   frame.hidden = false;
+  $("#bar-day").textContent = `Raport z dnia ${day}`;
+  $("#download").href = url;
+  $("#download").setAttribute("download", `Zwroty_od_klientow_${day}.pdf`);
+  $("#bar").hidden = false;
   $("#message").hidden = true;
   window.addEventListener("pagehide", () => URL.revokeObjectURL(url));
 }
