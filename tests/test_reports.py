@@ -1,11 +1,14 @@
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest_asyncio
 
+from app.enums.return_order import CarrierType
 from app.services import day_report_pdf
 
-LINE = {"quantity": 2, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "damage_description": "rogi"}
+LINE = {"quantity_total": 2, "quantity_intact": 0, "carrier_type": "PARCEL", "damage_description": "rogi"}
 URL = "/api/reports/day-pdf"
 
 
@@ -35,14 +38,19 @@ async def test_a_day_without_returns_gives_the_empty_form(client, operator_heade
 
 
 async def test_many_items_spill_onto_further_pages(client, operator_headers, sku_id):
-    order = (await client.post("/api/returns", json={}, headers=operator_headers)).json()
-    for _ in range(20):
+    # Ten returns, each with intact and damaged pieces: twenty printed rows, more than one page holds.
+    day = None
+    for _ in range(10):
+        order = (await client.post("/api/returns", json={}, headers=operator_headers)).json()
+        day = order["return_date"]
         await client.post(
-            f"/api/returns/{order['uuid']}/lines", json={**LINE, "sku_id": sku_id}, headers=operator_headers
+            f"/api/returns/{order['uuid']}/lines",
+            json={**LINE, "sku_id": sku_id, "quantity_total": 2, "quantity_intact": 1},
+            headers=operator_headers,
         )
 
     one_page = await client.get(URL, params={"day": "2020-01-02"}, headers=operator_headers)
-    two_pages = await client.get(URL, params={"day": order["return_date"]}, headers=operator_headers)
+    two_pages = await client.get(URL, params={"day": day}, headers=operator_headers)
     assert two_pages.content.count(b"/Type /Page\n") > one_page.content.count(b"/Type /Page\n")
 
 
@@ -83,3 +91,17 @@ async def test_the_written_down_time_reaches_the_pdf(client, operator_headers):
 
     assert with_time.status_code == 200
     assert len(with_time.content) > len(without.content)
+
+
+def test_liczba_przyjetych_counts_returns_not_pieces():
+    """Pieces play no part: the form asks how many parcels and pallets were received."""
+    pallet_only = uuid4()
+    mixed = uuid4()
+    lines = [
+        SimpleNamespace(return_order_uuid=pallet_only, carrier_type=CarrierType.PALLET, quantity_total=7),
+        SimpleNamespace(return_order_uuid=mixed, carrier_type=CarrierType.PARCEL, quantity_total=7),
+        SimpleNamespace(return_order_uuid=mixed, carrier_type=CarrierType.PALLET, quantity_total=7),
+    ]
+
+    assert day_report_pdf._totals(lines) == (1, 2)
+    assert day_report_pdf._totals([]) == (0, 0)

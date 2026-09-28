@@ -5,9 +5,11 @@ printout matches the form the warehouse signs. Coordinates are in the scan's own
 """
 
 import io
+from collections import defaultdict
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+from uuid import UUID
 
 from fastapi import Depends
 from reportlab.pdfbase import pdfmetrics
@@ -62,23 +64,41 @@ def _fit(text: str, width: float) -> str:
     return text.rstrip() + "…"
 
 
-def _row(line: OrderLine, first_of_return: bool) -> list[str]:
-    """One printed line: reference, name, quantity, U/P, carrier, order number."""
-    number = line.return_order.bo_wms_number or _NO_NUMBER
-    return [
-        line.sku.trade_reference,
-        _fit(line.sku.product_name, _NAME_WIDTH),
-        str(line.quantity),
-        _CONDITION[line.goods_condition],
-        _CARRIER[line.carrier_type],
-        # The number belongs to the whole return, so it is written once, on its first item.
-        number if first_of_return else "",
+def _rows(line: OrderLine, first_of_return: bool) -> list[list[str]]:
+    """Intact and damaged pieces are printed on their own rows, as on the paper form."""
+    quantities = [
+        (line.quantity_intact, GoodsCondition.FULL_VALUE),
+        (line.quantity_damaged, GoodsCondition.DAMAGED),
     ]
+    number = line.return_order.bo_wms_number or _NO_NUMBER
+    rows = []
+    for quantity, condition in quantities:
+        if not quantity:
+            continue
+        rows.append(
+            [
+                line.sku.trade_reference,
+                _fit(line.sku.product_name, _NAME_WIDTH),
+                str(quantity),
+                _CONDITION[condition],
+                _CARRIER[line.carrier_type],
+                # The number belongs to the whole return, so it is written once, on its first row.
+                number if first_of_return and not rows else "",
+            ]
+        )
+    return rows
 
 
 def _totals(lines: list[OrderLine]) -> tuple[int, int]:
-    parcels = sum(line.quantity for line in lines if line.carrier_type == CarrierType.PARCEL)
-    pallets = sum(line.quantity for line in lines if line.carrier_type == CarrierType.PALLET)
+    """How many returns arrived as parcels and how many as pallets ("Liczba przyjętych").
+
+    Counted per return, not per piece; a return carrying both counts on both sides.
+    """
+    carriers: dict[UUID, set[CarrierType]] = defaultdict(set)
+    for line in lines:
+        carriers[line.return_order_uuid].add(line.carrier_type)
+    parcels = sum(1 for used in carriers.values() if CarrierType.PARCEL in used)
+    pallets = sum(1 for used in carriers.values() if CarrierType.PALLET in used)
     return parcels, pallets
 
 
@@ -119,17 +139,18 @@ def _render(day: date, lines: list[OrderLine], minutes: int | None = None) -> io
     seen_returns: set = set()
 
     for line in lines:
-        if printed == _ROWS_PER_PAGE:
-            sheet.showPage()
-            new_page()
-            y = _FIRST_ROW_Y
-            printed = 0
         first_of_return = line.return_order_uuid not in seen_returns
         seen_returns.add(line.return_order_uuid)
-        for x, value in zip(_ROW_X, _row(line, first_of_return), strict=True):
-            sheet.drawString(x, y, value)
-        printed += 1
-        y -= _ROW_HEIGHT
+        for row in _rows(line, first_of_return):
+            if printed == _ROWS_PER_PAGE:
+                sheet.showPage()
+                new_page()
+                y = _FIRST_ROW_Y
+                printed = 0
+            for x, value in zip(_ROW_X, row, strict=True):
+                sheet.drawString(x, y, value)
+            printed += 1
+            y -= _ROW_HEIGHT
 
     # "Liczba przyjętych" is a summary of the whole day, so it goes on the last page only.
     parcels, pallets = _totals(lines)

@@ -8,7 +8,8 @@ _MAX_ACK = 1000
 
 class ReportLineItem(BaseModel):
     line_uuid: UUID
-    row: list[str | int]
+    # One row for the intact pieces and one for the damaged ones, as the sheet expects them.
+    rows: list[list[str | int]]
 
 
 class ReportLinesOut(BaseModel):

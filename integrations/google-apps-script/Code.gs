@@ -123,18 +123,16 @@ function syncReportLines(token, started) {
       log("arkusz był pusty — dopisano nagłówek");
     }
 
+    // A line gives one row for the intact pieces and one for the damaged ones.
+    const incoming = page.items.reduce((all, item) => all.concat(item.rows), []);
     const firstRow = sheet.getLastRow() + 1;
-    ensureRows(sheet, firstRow + page.items.length - 1);
+    ensureRows(sheet, firstRow + incoming.length - 1);
     ensureColumns(sheet, page.columns.length);
-    const target = sheet.getRange(firstRow, 1, page.items.length, page.columns.length);
+    const target = sheet.getRange(firstRow, 1, incoming.length, page.columns.length);
     log(`zapis do ${target.getA1Notation()}`);
 
     // Checked before anything is written, so a mismatch leaves the sheet untouched.
-    const rows = fitToValidation(
-      target,
-      page.items.map((item) => item.row),
-      page.columns,
-    );
+    const rows = fitToValidation(target, incoming, page.columns);
     TEXT_COLUMNS.forEach((col) => sheet.getRange(firstRow, col, rows.length, 1).setNumberFormat("@"));
     sheet.getRange(firstRow, DATE_COLUMN, rows.length, 1).setNumberFormat("yyyy-mm-dd");
     target.setValues(rows);

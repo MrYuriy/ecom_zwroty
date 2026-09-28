@@ -10,7 +10,7 @@ from app.models.line_image import LineImage
 from app.repositories.integration import IntegrationRepository
 from app.schemas.integration import AckResult, ImageItem, ImagesOut, ReportLineItem, ReportLinesOut
 from app.services.image_storage import ImageStorage
-from app.services.report import NO_NUMBER, REPORT_COLUMNS, report_row
+from app.services.report import NO_NUMBER, REPORT_COLUMNS, report_rows
 
 
 class IntegrationService:
@@ -24,7 +24,7 @@ class IntegrationService:
         lines, total = await self.repo.pending_lines(limit)
         return ReportLinesOut(
             columns=REPORT_COLUMNS,
-            items=[ReportLineItem(line_uuid=line.uuid, row=report_row(line)) for line in lines],
+            items=[ReportLineItem(line_uuid=line.uuid, rows=report_rows(line)) for line in lines],
             remaining=total - len(lines),
         )
 

@@ -23,7 +23,7 @@ async def _order(client, headers, **header) -> str:
 
 
 async def _add_line(client, headers, order: str, sku_id: int, **fields) -> str:
-    body = {"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "FULL_VALUE", "sku_id": sku_id, **fields}
+    body = {"quantity_total": 1, "quantity_intact": 1, "carrier_type": "PARCEL", "sku_id": sku_id, **fields}
     response = await client.post(f"/api/returns/{order}/lines", json=body, headers=headers)
     assert response.status_code == 201, response.text
     return response.json()["lines"][-1]["uuid"]
@@ -48,14 +48,16 @@ async def test_report_lines_match_the_report_layout(client, operator_headers, ap
         operator_headers,
         first,
         damaged,
-        goods_condition="DAMAGED",
+        quantity_intact=0,
         damage_description="rogi",
         remarks="etykieta na @",
     )
     second = await _order(
         client, operator_headers, bo_wms_number="363775", tempo_number="25363L21171", return_date="2026-01-05"
     )
-    await _add_line(client, operator_headers, second, unparametrized, quantity=15, carrier_type="PALLET")
+    await _add_line(
+        client, operator_headers, second, unparametrized, quantity_total=15, quantity_intact=15, carrier_type="PALLET"
+    )
     for order in (first, second):
         await _close(client, operator_headers, order)
 
@@ -72,9 +74,9 @@ async def test_report_lines_match_the_report_layout(client, operator_headers, ap
         "KLASYFIKACJA TOWARU",
         "OPIS USZKODZENIA",
     ]
-    assert [item["row"] for item in data["items"]] == [
-        ["2026-01-02", "brak", "brak", "45783276", "tak", "etykieta na @", 1, "paczka", "uszkodzony", "rogi"],
-        ["2026-01-05", "363775", "25363L21171", "45603124", "nie", "", 15, "paleta", "pełnowartościowy", ""],
+    assert [item["rows"] for item in data["items"]] == [
+        [["2026-01-02", "brak", "brak", "45783276", "tak", "etykieta na @", 1, "paczka", "uszkodzony", "rogi"]],
+        [["2026-01-05", "363775", "25363L21171", "45603124", "nie", "", 15, "paleta", "pełnowartościowy", ""]],
     ]
     assert data["remaining"] == 0
 
@@ -90,9 +92,11 @@ async def test_only_closed_returns_are_exported(client, operator_headers, api_ke
 
 
 async def test_acknowledged_lines_are_not_sent_again(client, operator_headers, api_key):
-    sku_id = await _sku(client, operator_headers, "82376357")
     order = await _order(client, operator_headers)
-    lines = [await _add_line(client, operator_headers, order, sku_id) for _ in range(3)]
+    lines = [
+        await _add_line(client, operator_headers, order, await _sku(client, operator_headers, reference))
+        for reference in ("82376357", "45783276", "45603124")
+    ]
     await _close(client, operator_headers, order)
 
     page = (await client.get("/api/integration/report-lines", params={"limit": 2}, headers=api_key)).json()
@@ -116,8 +120,9 @@ async def test_edits_after_export_are_not_sent_again(client, operator_headers, a
     await client.post("/api/integration/report-lines/ack", json={"line_uuids": [line]}, headers=api_key)
 
     await client.post(f"/api/returns/{order}/reopen", headers=operator_headers)
-    await client.patch(f"/api/returns/{order}/lines/{line}", json={"quantity": 5}, headers=operator_headers)
-    new_line = await _add_line(client, operator_headers, order, sku_id)
+    await client.patch(f"/api/returns/{order}/lines/{line}", json={"quantity_total": 5}, headers=operator_headers)
+    # Another product, so the scan starts a new line instead of adding to the exported one.
+    new_line = await _add_line(client, operator_headers, order, await _sku(client, operator_headers, "45783276"))
     await _close(client, operator_headers, order)
 
     items = (await client.get("/api/integration/report-lines", headers=api_key)).json()["items"]
