@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
+from app.enums.return_order import CarrierType, ReturnStatus
 from app.schemas.sku import SkuOut
 
 _NO_NUMBER = "brak"
@@ -20,19 +20,27 @@ def _normalize_number(value: str | None) -> str | None:
 
 
 class OrderLineCreate(BaseModel):
+    """How many pieces came in and how many of them are fine; the rest count as damaged."""
+
     sku_id: int
-    quantity: int = Field(ge=1)
+    quantity_total: int = Field(ge=1)
+    quantity_intact: int = Field(ge=0)
     carrier_type: CarrierType
-    goods_condition: GoodsCondition
     damage_description: str | None = None
     remarks: str | None = None
+
+    @model_validator(mode="after")
+    def _intact_fits(self) -> "OrderLineCreate":
+        if self.quantity_intact > self.quantity_total:
+            raise ValueError("quantity_intact cannot exceed quantity_total")
+        return self
 
 
 class OrderLineUpdate(BaseModel):
     sku_id: int | None = None
-    quantity: int | None = Field(None, ge=1)
+    quantity_total: int | None = Field(None, ge=1)
+    quantity_intact: int | None = Field(None, ge=0)
     carrier_type: CarrierType | None = None
-    goods_condition: GoodsCondition | None = None
     damage_description: str | None = None
     remarks: str | None = None
 
@@ -54,9 +62,10 @@ class OrderLineOut(BaseModel):
     uuid: UUID
     sku: SkuOut
     images: list[LineImageOut]
-    quantity: int
+    quantity_total: int
+    quantity_intact: int
+    quantity_damaged: int
     carrier_type: CarrierType
-    goods_condition: GoodsCondition
     damage_description: str | None
     remarks: str | None
     created_at: datetime

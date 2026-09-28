@@ -11,7 +11,7 @@ async def _order(client, headers, **header) -> str:
 
 
 async def _add_line(client, headers, order: str, sku_id: int, **fields) -> str:
-    body = {"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "FULL_VALUE", "sku_id": sku_id, **fields}
+    body = {"quantity_total": 1, "quantity_intact": 1, "carrier_type": "PARCEL", "sku_id": sku_id, **fields}
     response = await client.post(f"/api/returns/{order}/lines", json=body, headers=headers)
     assert response.status_code == 201, response.text
     return response.json()["lines"][-1]["uuid"]
@@ -44,10 +44,10 @@ async def test_closed_return_is_locked_until_reopened(client, operator_headers):
     blocked = [
         client.post(
             f"/api/returns/{order}/lines",
-            json={"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "sku_id": sku_id},
+            json={"quantity_total": 1, "quantity_intact": 0, "carrier_type": "PARCEL", "sku_id": sku_id},
             headers=operator_headers,
         ),
-        client.patch(f"/api/returns/{order}/lines/{line}", json={"quantity": 2}, headers=operator_headers),
+        client.patch(f"/api/returns/{order}/lines/{line}", json={"quantity_total": 2}, headers=operator_headers),
         client.delete(f"/api/returns/{order}/lines/{line}", headers=operator_headers),
         client.patch(f"/api/returns/{order}", json={"bo_wms_number": "1"}, headers=operator_headers),
         client.post(
@@ -59,5 +59,7 @@ async def test_closed_return_is_locked_until_reopened(client, operator_headers):
         assert (await request).status_code == 400
 
     await client.post(f"/api/returns/{order}/reopen", headers=operator_headers)
-    response = await client.patch(f"/api/returns/{order}/lines/{line}", json={"quantity": 2}, headers=operator_headers)
+    response = await client.patch(
+        f"/api/returns/{order}/lines/{line}", json={"quantity_total": 2}, headers=operator_headers
+    )
     assert response.status_code == 200

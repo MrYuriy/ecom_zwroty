@@ -3,7 +3,7 @@ from datetime import date
 from sqlalchemy import CheckConstraint, Column, Date, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from app.enums.return_order import CarrierType, GoodsCondition, ReturnStatus
+from app.enums.return_order import CarrierType, ReturnStatus
 from app.models.base import Base, CreatedAtMixin, TimestampMixin, UUIDMixin, UUIDType
 
 
@@ -35,19 +35,29 @@ class ReturnOrder(Base, UUIDMixin, TimestampMixin):
 
 class OrderLine(Base, UUIDMixin, CreatedAtMixin):
     __tablename__ = "order_lines"
-    __table_args__ = (CheckConstraint("quantity >= 1", name="ck_order_lines_quantity_positive"),)
+    __table_args__ = (
+        CheckConstraint("quantity_total >= 1", name="ck_order_lines_quantity_positive"),
+        CheckConstraint(
+            "quantity_intact >= 0 AND quantity_intact <= quantity_total", name="ck_order_lines_quantity_intact"
+        ),
+    )
 
     return_order_uuid = Column(
         UUIDType, ForeignKey("return_orders.uuid", ondelete="CASCADE"), nullable=False, index=True
     )
     sku_id = Column(Integer, ForeignKey("sku_registry.id", ondelete="RESTRICT"), nullable=False, index=True)
-    quantity = Column(Integer, nullable=False)
+    # Received pieces and how many of them are fine; the rest are damaged (photos belong to those).
+    quantity_total = Column(Integer, nullable=False)
+    quantity_intact = Column(Integer, nullable=False)
     carrier_type = Column(Enum(CarrierType, name="carrier_type_enum"), nullable=False)
-    goods_condition = Column(Enum(GoodsCondition, name="goods_condition_enum"), nullable=False)
     damage_description = Column(Text, nullable=True)
     remarks = Column(Text, nullable=True)
     # Set once the line was delivered to the report sheet (acknowledged by the integration script).
     exported_at = Column(DateTime, nullable=True, index=True)
+
+    @property
+    def quantity_damaged(self) -> int:
+        return self.quantity_total - self.quantity_intact
 
     return_order = relationship("ReturnOrder", back_populates="lines")
     sku = relationship("Sku")

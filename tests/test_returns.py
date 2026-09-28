@@ -1,6 +1,6 @@
 import pytest_asyncio
 
-LINE = {"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "damage_description": "rogi"}
+LINE = {"quantity_total": 1, "quantity_intact": 0, "carrier_type": "PARCEL", "damage_description": "rogi"}
 
 
 @pytest_asyncio.fixture
@@ -51,20 +51,26 @@ async def test_add_update_delete_line(client, operator_headers, sku_id):
     assert line["remarks"] == "dysk"
 
     updated = await client.patch(
-        f"{url}/{line['uuid']}", json={"quantity": 3, "damage_description": None}, headers=operator_headers
+        f"{url}/{line['uuid']}", json={"quantity_total": 3, "damage_description": None}, headers=operator_headers
     )
-    assert updated.json()["lines"][0]["quantity"] == 3
+    assert updated.json()["lines"][0]["quantity_total"] == 3
     assert updated.json()["lines"][0]["damage_description"] is None
 
     deleted = await client.delete(f"{url}/{line['uuid']}", headers=operator_headers)
     assert deleted.json()["lines"] == []
 
 
-async def test_line_rejects_zero_quantity_and_unknown_sku(client, operator_headers, sku_id):
+async def test_line_rejects_impossible_quantities_and_unknown_sku(client, operator_headers, sku_id):
     order = await _create_order(client, operator_headers)
     url = f"/api/returns/{order['uuid']}/lines"
     assert (
-        await client.post(url, json={**LINE, "sku_id": sku_id, "quantity": 0}, headers=operator_headers)
+        await client.post(url, json={**LINE, "sku_id": sku_id, "quantity_total": 0}, headers=operator_headers)
+    ).status_code == 422
+    # More intact pieces than were received at all.
+    assert (
+        await client.post(
+            url, json={**LINE, "sku_id": sku_id, "quantity_total": 2, "quantity_intact": 3}, headers=operator_headers
+        )
     ).status_code == 422
     assert (await client.post(url, json={**LINE, "sku_id": 9999}, headers=operator_headers)).status_code == 404
 
@@ -88,3 +94,45 @@ async def test_list_filters_by_number_and_date(client, operator_headers):
         "/api/returns", params={"date_from": "2026-01-03", "date_to": "2026-01-31"}, headers=operator_headers
     )
     assert [o["tempo_number"] for o in by_date.json()["items"]] == ["25355L36"]
+
+
+async def test_scanning_a_product_again_adds_up_into_one_line(client, operator_headers, sku_id):
+    """Pieces of one product arrive on several pallets; the return keeps a single line for them."""
+    order = await _create_order(client, operator_headers, bo_wms_number="359048")
+    url = f"/api/returns/{order['uuid']}/lines"
+
+    first = {"sku_id": sku_id, "quantity_total": 100, "quantity_intact": 100, "carrier_type": "PARCEL"}
+    await client.post(url, json=first, headers=operator_headers)
+    second = {
+        "sku_id": sku_id,
+        "quantity_total": 100,
+        "quantity_intact": 98,
+        "carrier_type": "PALLET",
+        "damage_description": "pęknięte",
+        "remarks": "druga paleta",
+    }
+    order = (await client.post(url, json=second, headers=operator_headers)).json()
+
+    assert len(order["lines"]) == 1
+    line = order["lines"][0]
+    assert (line["quantity_total"], line["quantity_intact"], line["quantity_damaged"]) == (200, 198, 2)
+    # The carrier follows the last scan, and notes from both scans are kept.
+    assert line["carrier_type"] == "PALLET"
+    assert line["damage_description"] == "pęknięte"
+    assert line["remarks"] == "druga paleta"
+
+    third = {**second, "damage_description": "porysowane", "remarks": "druga paleta"}
+    line = (await client.post(url, json=third, headers=operator_headers)).json()["lines"][0]
+    assert line["quantity_total"] == 300
+    assert line["damage_description"] == "pęknięte, porysowane"
+    assert line["remarks"] == "druga paleta"
+
+
+async def test_a_closed_return_does_not_take_more_pieces(client, operator_headers, sku_id):
+    order = await _create_order(client, operator_headers)
+    url = f"/api/returns/{order['uuid']}/lines"
+    body = {"sku_id": sku_id, "quantity_total": 5, "quantity_intact": 5, "carrier_type": "PARCEL"}
+    await client.post(url, json=body, headers=operator_headers)
+    await client.post(f"/api/returns/{order['uuid']}/close", headers=operator_headers)
+
+    assert (await client.post(url, json=body, headers=operator_headers)).status_code == 400

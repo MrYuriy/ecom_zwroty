@@ -5,7 +5,7 @@ from app.services.image_storage import ImageStorage
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
-LINE = {"quantity": 1, "carrier_type": "PARCEL", "goods_condition": "DAMAGED", "damage_description": "rogi"}
+LINE = {"quantity_total": 1, "quantity_intact": 0, "carrier_type": "PARCEL", "damage_description": "rogi"}
 
 
 @pytest_asyncio.fixture

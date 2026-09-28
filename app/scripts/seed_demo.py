@@ -99,11 +99,12 @@ async def ensure_skus(session: AsyncSession) -> dict[str, Sku]:
 def random_line(rng: random.Random, sku: Sku) -> OrderLine:
     carrier = L if rng.random() < 0.25 else P
     damaged = rng.random() < 0.45
+    quantity = rng.randint(2, 12) if carrier is L else 1
     return OrderLine(
         sku=sku,
-        quantity=rng.randint(2, 12) if carrier is L else 1,
+        quantity_total=quantity,
+        quantity_intact=quantity - (rng.randint(1, quantity) if damaged else 0),
         carrier_type=carrier,
-        goods_condition=D if damaged else F,
         damage_description=rng.choice(DAMAGES) if damaged else None,
         remarks=rng.choice(REMARKS) if rng.random() < 0.3 else None,
     )
@@ -116,9 +117,9 @@ def add_sample_returns(add_order: Callable[[date, str | None, str | None], Retur
         order.lines.append(
             OrderLine(
                 sku=skus[reference],
-                quantity=qty,
+                quantity_total=qty,
+                quantity_intact=0 if condition is D else qty,
                 carrier_type=carrier,
-                goods_condition=condition,
                 damage_description=damage,
                 remarks=remarks,
             )

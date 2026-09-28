@@ -28,6 +28,18 @@ from app.services.image_storage import ImageStorage, detect_image_type, upload_f
 _CLEARABLE_LINE_FIELDS = {"damage_description", "remarks"}
 
 
+def _joined(current: str | None, addition: str | None) -> str | None:
+    """Keeps both notes when a product is scanned again, without repeating the same text."""
+    addition = (addition or "").strip()
+    if not addition:
+        return current
+    parts = [part.strip() for part in (current or "").split(",") if part.strip()]
+    if addition in parts:
+        return current
+    parts.append(addition)
+    return ", ".join(parts)
+
+
 class ReturnOrderService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -126,7 +138,22 @@ class ReturnOrderService:
     async def add_line(self, order_uuid: UUID, data: OrderLineCreate) -> ReturnOrderOut:
         await self._get_open_order(order_uuid)
         await self._ensure_sku_exists(data.sku_id)
-        await self.lines.create_one({**data.model_dump(), "return_order_uuid": order_uuid})
+        # One product often arrives on several pallets: while the return is open its scans add up
+        # into a single line, so the report shows the whole quantity at once.
+        line = await self.lines.get_one(return_order_uuid=order_uuid, sku_id=data.sku_id)
+        if line:
+            await self.lines.update_one(
+                line,
+                {
+                    "quantity_total": line.quantity_total + data.quantity_total,
+                    "quantity_intact": line.quantity_intact + data.quantity_intact,
+                    "carrier_type": data.carrier_type,
+                    "damage_description": _joined(line.damage_description, data.damage_description),
+                    "remarks": _joined(line.remarks, data.remarks),
+                },
+            )
+        else:
+            await self.lines.create_one({**data.model_dump(), "return_order_uuid": order_uuid})
         return await self._reload(order_uuid)
 
     async def update_line(self, order_uuid: UUID, line_uuid: UUID, data: OrderLineUpdate) -> ReturnOrderOut:
@@ -140,6 +167,14 @@ class ReturnOrderService:
         }
         if "sku_id" in changes:
             await self._ensure_sku_exists(changes["sku_id"])
+            # Two lines of one product would defeat the scans adding up, so the operator merges by hand.
+            if changes["sku_id"] != line.sku_id and await self.lines.get_one(
+                return_order_uuid=order_uuid, sku_id=changes["sku_id"]
+            ):
+                raise BadRequestException("This product already has a line in the return")
+        total = changes.get("quantity_total", line.quantity_total)
+        if changes.get("quantity_intact", line.quantity_intact) > total:
+            raise BadRequestException("Intact pieces cannot exceed the total")
         # Photo names carry the SKU reference, so another SKU renames them.
         resku = "sku_id" in changes and changes["sku_id"] != line.sku_id
         keys_before = await self.images.keys_for_line(line_uuid) if resku else set()
