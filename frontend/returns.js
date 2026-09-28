@@ -8,8 +8,8 @@ function openOrder(uuid) {
 }
 
 function orderRow(order) {
-  const pieces = order.lines.reduce((sum, line) => sum + line.quantity, 0);
-  const damaged = order.lines.filter((line) => line.goods_condition === "DAMAGED").length;
+  const pieces = order.lines.reduce((sum, line) => sum + line.quantity_total, 0);
+  const damaged = order.lines.reduce((sum, line) => sum + line.quantity_damaged, 0);
   return h(
     "tr",
     {
@@ -23,7 +23,7 @@ function orderRow(order) {
     h("td", { "data-label": "Numer Tempo" }, orNoNumber(order.tempo_number)),
     h("td", { "data-label": "Pozycje", class: "num" }, order.lines.length),
     h("td", { "data-label": "Sztuk", class: "num" }, pieces),
-    h("td", { "data-label": "Uszkodzone", class: "num" }, damaged ? h("span", { class: "badge danger" }, damaged) : "—"),
+    h("td", { "data-label": "Uszkodzone", class: "num" }, damagedBadge(damaged)),
     h("td", { "data-label": "Status" }, statusBadge(order.status)),
   );
 }

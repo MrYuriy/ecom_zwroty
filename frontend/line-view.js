@@ -20,9 +20,10 @@ function renderDetails(order, line) {
   setText("#v-product", line.sku.product_name);
   setText("#v-ean", line.sku.eans.join(", "));
   setText("#v-param", line.sku.is_parametrized ? "tak" : "nie");
-  setText("#v-quantity", line.quantity);
+  setText("#v-quantity", line.quantity_total);
+  setText("#v-intact", line.quantity_intact);
+  $("#v-damaged").replaceChildren(damagedBadge(line.quantity_damaged));
   setText("#v-carrier", LABELS.carrier[line.carrier_type]);
-  $("#v-condition").replaceChildren(conditionBadge(line.goods_condition));
   setText("#v-damage", line.damage_description);
   setText("#v-remarks", line.remarks);
   setText("#v-exported", line.exported_at ? `tak, ${formatDateTime(line.exported_at)}` : "nie");

@@ -30,7 +30,8 @@ New feature = one vertical: `model → migration → repository → schema → s
 `00005` drops the SUPERVISOR role (roles: OPERATOR, ADMIN) · `00006` wms_orders ·
 `00007` users log in with `wms_login` (case-insensitive) instead of an e-mail ·
 `00008` return status + export statuses · `00009` a SKU has many EANs (`sku_eans`, each code unique) + `sku_imports` ·
-`00010` work_logs (minutes per day).
+`00010` work_logs (minutes per day) ·
+`00011` order_lines keep total and intact pieces instead of one quantity with a condition.
 Hand-written,
 `down_revision` = previous, run on container start (`entrypoint.sh`).
 
@@ -70,6 +71,19 @@ Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; g
 gaps. `python -m app.scripts.rename_images` renames everything (idempotent). Type is checked from magic bytes (JPEG/PNG/WebP), size/count limits in `core/config/storage.py`.
 `GET /api/images/{uuid}` needs the bearer token, so the cabinet shows photos from blob URLs.
 Deleting a line or a return deletes its files after the DB commit.
+
+## Receiving pieces
+A line stores `quantity_total` and `quantity_intact`; **damaged = total − intact** (`quantity_damaged`), and
+photos belong to the damaged pieces. The operator types the two numbers, never the damaged count.
+While the return is **OPEN**, scanning a product that is already on it **adds up into that one line**
+(key: SKU alone) — items of one order arrive on several pallets, and the report has to show the whole
+quantity. The carrier follows the last scan; damage descriptions and remarks are appended if new.
+A closed return takes nothing more until reopened, and moving a line to a product that already has a
+line is refused (400) so the totals stay in one place.
+
+In both reports a line prints **two rows** — the intact pieces as `P`/pełnowartościowy and the damaged
+ones as `U`/uszkodzony, with the damage description only on the `U` row; an empty half is skipped.
+`/api/integration/report-lines` therefore returns `rows` (a list) per line, not a single `row`.
 
 ## Return status and the report export
 A return is `OPEN` while items are received and `CLOSED` when finished ("Zakończ"/"Następny zwrot" close it).

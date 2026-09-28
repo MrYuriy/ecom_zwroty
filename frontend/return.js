@@ -48,9 +48,9 @@ function lineRow(line) {
     ),
     h("td", { "data-label": "Produkt" }, line.sku.product_name),
     h("td", { "data-label": "Param." }, line.sku.is_parametrized ? "tak" : "nie"),
-    h("td", { "data-label": "Ilość", class: "num" }, line.quantity),
+    h("td", { "data-label": "Ilość", class: "num" }, line.quantity_total),
+    h("td", { "data-label": "Uszkodzone", class: "num" }, damagedBadge(line.quantity_damaged)),
     h("td", { "data-label": "Nośnik" }, LABELS.carrier[line.carrier_type]),
-    h("td", { "data-label": "Klasyfikacja" }, conditionBadge(line.goods_condition)),
     h("td", { "data-label": "Opis uszkodzenia" }, line.damage_description || "—"),
     h("td", { "data-label": "Uwagi" }, line.remarks || "—"),
     h(
@@ -82,7 +82,7 @@ function render() {
   $("#s-bo").textContent = orNoNumber(order.bo_wms_number);
   $("#s-tempo").textContent = orNoNumber(order.tempo_number);
   $("#s-lines").textContent = order.lines.length;
-  $("#s-pieces").textContent = order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  $("#s-pieces").textContent = order.lines.reduce((sum, line) => sum + line.quantity_total, 0);
   $("#s-status").replaceChildren(statusBadge(order.status));
   for (const id of ["#add-line", "#edit-header", "#close-order", "#delete-order"]) {
     $(id).classList.toggle("hidden", isClosed());

@@ -44,8 +44,12 @@
         <div id="line-sku" class="sku-found"></div>
         <form id="line-form" class="form-grid">
           <label>
-            Ilość
-            <input name="quantity" type="number" min="1" step="1" value="1" required />
+            Ilość (razem)
+            <input name="quantity_total" type="number" min="1" step="1" value="1" inputmode="numeric" required />
+          </label>
+          <label>
+            W tym pełnowartościowe
+            <input name="quantity_intact" type="number" min="0" step="1" value="1" inputmode="numeric" required />
           </label>
           <div>
             <span class="muted" id="carrier-label">Nośnik</span>
@@ -54,16 +58,11 @@
               <label><input type="radio" name="carrier_type" value="PALLET" />paleta</label>
             </div>
           </div>
-          <div class="wide">
-            <span class="muted" id="condition-label">Klasyfikacja towaru</span>
-            <div class="segmented" role="radiogroup" aria-labelledby="condition-label">
-              <label><input type="radio" name="goods_condition" value="FULL_VALUE" checked />pełnowartościowy</label>
-              <label><input type="radio" name="goods_condition" value="DAMAGED" />uszkodzony</label>
-            </div>
-          </div>
+          <p id="damaged-note" class="wide field-hint" role="status" aria-live="polite"></p>
           <label class="wide">
             Opis uszkodzenia
             <input name="damage_description" placeholder="np. rogi, pęknięte, porysowane" />
+            <span class="field-hint">Zdjęcia dotyczą uszkodzonych sztuk.</span>
           </label>
           <label class="wide">
             Uwagi

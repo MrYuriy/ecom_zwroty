@@ -45,16 +45,35 @@ function showLineStep(sku) {
     ),
   );
   lineStep.classList.remove("hidden");
-  form.quantity.focus();
-  form.quantity.select();
+  form.quantity_total.focus();
+  form.quantity_total.select();
 }
 
-// Carrier and condition carry over: several items from one parcel usually share them.
+// The carrier carries over: several items from one parcel usually share it.
 function clearLineFields() {
-  form.quantity.value = 1;
+  form.quantity_total.value = 1;
+  form.quantity_intact.value = 1;
   form.damage_description.value = "";
   form.remarks.value = "";
+  renderDamaged();
   clearPending();
+}
+
+// Damaged pieces are the difference between the two fields; the operator never types them.
+function renderDamaged() {
+  const damaged = Number(form.quantity_total.value) - Number(form.quantity_intact.value);
+  const note = $("#damaged-note");
+  if (!Number.isFinite(damaged) || damaged < 0) {
+    note.textContent = "Pełnowartościowych nie może być więcej niż sztuk razem.";
+    note.className = "wide field-hint warn";
+    return;
+  }
+  note.textContent = `Uszkodzone: ${damaged}`;
+  note.className = "wide field-hint";
+}
+
+for (const field of ["quantity_total", "quantity_intact"]) {
+  form[field].addEventListener("input", renderDamaged);
 }
 
 function renderOrderInfo() {
@@ -201,9 +220,9 @@ $("#scan-form").addEventListener("submit", async (event) => {
 // ---------- saving ----------
 function lineBody() {
   return {
-    quantity: Number(form.quantity.value),
+    quantity_total: Number(form.quantity_total.value),
+    quantity_intact: Number(form.quantity_intact.value),
     carrier_type: form.querySelector("input[name=carrier_type]:checked").value,
-    goods_condition: form.querySelector("input[name=goods_condition]:checked").value,
     damage_description: nullIfBlank(form.damage_description.value),
     remarks: nullIfBlank(form.remarks.value),
   };
@@ -216,28 +235,34 @@ async function saveEdit(body) {
 }
 
 async function saveNew(body) {
-  const before = new Set(state.order.lines.map((l) => l.uuid));
   state.order = await api(`/returns/${orderId}/lines`, { method: "POST", body: { ...body, sku_id: state.sku.id } });
-  const created = state.order.lines.find((l) => !before.has(l.uuid));
+  // A product scanned again lands on its existing line, so the line is found by the product.
+  const saved = state.order.lines.find((l) => l.sku.id === state.sku.id);
   try {
-    state.order = (await uploadPending(created.uuid)) || state.order;
+    state.order = (await uploadPending(saved.uuid)) || state.order;
   } catch (err) {
     // The line itself is saved; send the operator to it so the photos can be retried there.
     showError(err);
-    setTimeout(() => (location.href = lineEditUrl(created.uuid)), 1500);
+    setTimeout(() => (location.href = lineEditUrl(saved.uuid)), 1500);
     return;
   }
   renderOrderInfo();
-  toast(`Dodano: ${state.sku.trade_reference}`);
+  const line = state.order.lines.find((l) => l.sku.id === state.sku.id);
+  toast(`Dodano: ${state.sku.trade_reference} · razem ${line.quantity_total} szt.`);
   showScanStep();
 }
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const body = lineBody();
-  if (!Number.isInteger(body.quantity) || body.quantity < 1) {
+  if (!Number.isInteger(body.quantity_total) || body.quantity_total < 1) {
     toast("Ilość musi być liczbą całkowitą ≥ 1", "error");
-    form.quantity.focus();
+    form.quantity_total.focus();
+    return;
+  }
+  if (!Number.isInteger(body.quantity_intact) || body.quantity_intact < 0 || body.quantity_intact > body.quantity_total) {
+    toast("Pełnowartościowych musi być od 0 do liczby sztuk razem", "error");
+    form.quantity_intact.focus();
     return;
   }
   await withBusy($("#line-submit"), async () => {
@@ -267,11 +292,12 @@ document.addEventListener("keydown", (event) => {
 
 // ---------- init ----------
 function fillFromLine(line) {
-  form.quantity.value = line.quantity;
+  form.quantity_total.value = line.quantity_total;
+  form.quantity_intact.value = line.quantity_intact;
   form.querySelector(`input[name=carrier_type][value=${line.carrier_type}]`).checked = true;
-  form.querySelector(`input[name=goods_condition][value=${line.goods_condition}]`).checked = true;
   form.damage_description.value = line.damage_description || "";
   form.remarks.value = line.remarks || "";
+  renderDamaged();
 }
 
 // "Zakończ" and "Następny zwrot" mean the operator is done: close the return, then move on.

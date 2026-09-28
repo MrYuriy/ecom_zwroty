@@ -76,10 +76,11 @@ async def test_delete_unused_sku_removes_it_with_its_codes(client, operator_head
 
 async def test_sku_used_in_a_return_is_not_deleted_and_lists_the_returns(client, operator_headers):
     sku_id = (await client.post("/api/skus", json=SKU, headers=operator_headers)).json()["id"]
-    line = {"sku_id": sku_id, "quantity": 1, "carrier_type": "PARCEL", "goods_condition": "FULL_VALUE"}
+    line = {"sku_id": sku_id, "quantity_total": 1, "quantity_intact": 1, "carrier_type": "PARCEL"}
     orders = []
     for number in ("356902", None):
         order = (await client.post("/api/returns", json={"bo_wms_number": number}, headers=operator_headers)).json()
+        # Two scans in the first return add up on one line, so the usage counts pieces, not lines.
         for _ in range(2 if number else 1):
             await client.post(f"/api/returns/{order['uuid']}/lines", json=line, headers=operator_headers)
         orders.append(order)
@@ -91,9 +92,9 @@ async def test_sku_used_in_a_return_is_not_deleted_and_lists_the_returns(client,
     usage = (await client.get(f"/api/skus/{sku_id}/usage", headers=operator_headers)).json()
     by_uuid = {item["uuid"]: item for item in usage}
     assert set(by_uuid) == {order["uuid"] for order in orders}
-    assert by_uuid[orders[0]["uuid"]]["lines"] == 2
+    assert by_uuid[orders[0]["uuid"]]["pieces"] == 2
     assert by_uuid[orders[0]["uuid"]]["bo_wms_number"] == "356902"
-    assert by_uuid[orders[1]["uuid"]]["lines"] == 1
+    assert by_uuid[orders[1]["uuid"]]["pieces"] == 1
     assert by_uuid[orders[1]["uuid"]]["status"] == "OPEN"
 
 

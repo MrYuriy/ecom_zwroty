@@ -71,4 +71,4 @@ class SkuUsageOut(BaseModel):
     tempo_number: str | None
     return_date: date
     status: ReturnStatus
-    lines: int
+    pieces: int

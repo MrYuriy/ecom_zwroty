@@ -82,9 +82,9 @@ class SkuService:
                 tempo_number=order.tempo_number,
                 return_date=order.return_date,
                 status=order.status,
-                lines=lines,
+                pieces=pieces,
             )
-            for order, lines in await self.skus.usage(sku_id)
+            for order, pieces in await self.skus.usage(sku_id)
         ]
 
     async def delete_sku(self, sku_id: int) -> None:

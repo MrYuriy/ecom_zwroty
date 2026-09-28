@@ -19,7 +19,6 @@ const TOKEN = {
 // ---------- labels (API values → Polish UI text) ----------
 const LABELS = {
   carrier: { PARCEL: "paczka", PALLET: "paleta" },
-  condition: { DAMAGED: "uszkodzony", FULL_VALUE: "pełnowartościowy" },
   role: { OPERATOR: "Operator", ADMIN: "Administrator" },
   status: { OPEN: "w trakcie", CLOSED: "zamknięty" },
 };
@@ -241,8 +240,9 @@ function eanSummary(eans, shown = 2) {
   return eans.slice(0, shown).join(", ") + (rest > 0 ? ` +${rest}` : "");
 }
 
-function conditionBadge(condition) {
-  return h("span", { class: `badge ${condition === "DAMAGED" ? "danger" : "success"}` }, LABELS.condition[condition]);
+// Damaged pieces stand out on the lists; nothing damaged stays quiet.
+function damagedBadge(count) {
+  return count ? h("span", { class: "badge danger" }, String(count)) : "—";
 }
 
 // Map "" to null so optional text fields are cleared instead of stored as empty strings.

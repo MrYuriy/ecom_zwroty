@@ -28,15 +28,15 @@ class SkuRepository(BaseRepository[Sku]):
         return sorted((await self.session.execute(query)).scalars().all())
 
     async def usage(self, sku_id: int) -> list[tuple[ReturnOrder, int]]:
-        """Returns that have lines with this SKU, newest first, with the number of such lines."""
+        """Returns that received this SKU, newest first, with how many pieces of it they hold."""
         query = (
-            select(ReturnOrder, func.count(OrderLine.uuid))
+            select(ReturnOrder, func.sum(OrderLine.quantity_total))
             .join(OrderLine, OrderLine.return_order_uuid == ReturnOrder.uuid)
             .where(OrderLine.sku_id == sku_id)
             .group_by(ReturnOrder.uuid)
             .order_by(ReturnOrder.return_date.desc(), ReturnOrder.created_at.desc())
         )
-        return [(order, lines) for order, lines in (await self.session.execute(query)).all()]
+        return [(order, pieces) for order, pieces in (await self.session.execute(query)).all()]
 
     async def search(self, query: str | None, page: int, limit: int) -> tuple[list[Sku], int]:
         condition = None

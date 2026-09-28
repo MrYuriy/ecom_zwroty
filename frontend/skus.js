@@ -47,7 +47,7 @@ function hideUsage() {
 function usageItem(order) {
   const text =
     `${formatDate(order.return_date)} · BO/WMS ${orNoNumber(order.bo_wms_number)} · ` +
-    `Tempo ${orNoNumber(order.tempo_number)} · pozycji: ${order.lines} · ${LABELS.status[order.status]}`;
+    `Tempo ${orNoNumber(order.tempo_number)} · sztuk: ${order.pieces} · ${LABELS.status[order.status]}`;
   return h("li", {}, h("a", { href: `return.html?id=${encodeURIComponent(order.uuid)}` }, text));
 }
 
