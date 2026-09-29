@@ -8,7 +8,8 @@
  * nothing is lost: pressing the button again simply continues where the previous run stopped.
  *
  * Every step is logged; the log is shown in the dialog and in Apps Script → Executions.
- * Settings (API address, sheet tab, Drive folder, batch sizes) live in Config.gs.
+ * Settings (API address, target spreadsheet and tab, Drive folder, batch sizes) live in Config.gs.
+ * The script may sit in one spreadsheet and write into another — see REPORT_SPREADSHEET_ID.
  */
 
 // ===== Menu and dialog =====
@@ -32,7 +33,7 @@ function checkSheetRules() {
   LOG = [];
   const sheet = reportSheet();
   const row = sheet.getLastRow() + 1;
-  log(`arkusz „${sheet.getName()}”: wierszy ${sheet.getLastRow()}/${sheet.getMaxRows()}, kolumn ${sheet.getMaxColumns()}`);
+  log(`arkusz „${sheet.getParent().getName()} / ${sheet.getName()}”: wierszy ${sheet.getLastRow()}/${sheet.getMaxRows()}, kolumn ${sheet.getMaxColumns()}`);
   log(`reguły w wierszu ${row}:`);
 
   const rules = sheet.getRange(row, 1, 1, Math.min(10, sheet.getMaxColumns())).getDataValidations()[0];
@@ -107,7 +108,7 @@ function runSync(wmsLogin, password) {
 
 function syncReportLines(token, started) {
   const sheet = reportSheet();
-  log(`arkusz „${sheet.getName()}”: wierszy ${sheet.getLastRow()}/${sheet.getMaxRows()}, kolumn ${sheet.getMaxColumns()}`);
+  log(`arkusz „${sheet.getParent().getName()} / ${sheet.getName()}”: wierszy ${sheet.getLastRow()}/${sheet.getMaxRows()}, kolumn ${sheet.getMaxColumns()}`);
   let written = 0;
   let remaining = 0;
 
@@ -154,11 +155,19 @@ function syncReportLines(token, started) {
   return { written, remaining };
 }
 
+function reportSpreadsheet() {
+  if (!REPORT_SPREADSHEET_ID) return SpreadsheetApp.getActive();
+  try {
+    return SpreadsheetApp.openById(REPORT_SPREADSHEET_ID);
+  } catch (error) {
+    throw new Error(`Nie udało się otworzyć arkusza o id=${REPORT_SPREADSHEET_ID}: ${error.message}`);
+  }
+}
+
 function reportSheet() {
-  const sheet = SpreadsheetApp.getActive()
-    .getSheets()
-    .find((s) => s.getSheetId() === REPORT_SHEET_GID);
-  if (!sheet) throw new Error(`Nie znaleziono arkusza z gid=${REPORT_SHEET_GID}.`);
+  const spreadsheet = reportSpreadsheet();
+  const sheet = spreadsheet.getSheets().find((s) => s.getSheetId() === REPORT_SHEET_GID);
+  if (!sheet) throw new Error(`Nie znaleziono arkusza z gid=${REPORT_SHEET_GID} w „${spreadsheet.getName()}”.`);
   return sheet;
 }
 

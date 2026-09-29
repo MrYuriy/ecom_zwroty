@@ -6,8 +6,13 @@
 /** Backend API root (no trailing slash). */
 const API_BASE = "https://ecom-zwroty.piatek-magazyn.com/api";
 
-/** The report tab: the number after #gid= in the spreadsheet URL. */
-const REPORT_SHEET_GID = 0;
+/**
+ * Where the report rows land: the spreadsheet id (the part of its URL between /d/ and /edit)
+ * and the tab's gid (the number after #gid=). The script may live in another spreadsheet —
+ * leave REPORT_SPREADSHEET_ID empty to write into the one the menu was opened from.
+ */
+const REPORT_SPREADSHEET_ID = "12iSzLQOYXqpNV8g5G1O7xZIB487YoLyaXVe8g4F93H8"; // Magazyn zwroty Klientów 2026 Ceva.LM
+const REPORT_SHEET_GID = 1429694914;
 
 /** Drive folder for line photos: the id from the folder URL. */
 const PHOTOS_FOLDER_ID = "1o5rc5eYQXJ1qSA1DgLmm7665ZrGOzYO3";

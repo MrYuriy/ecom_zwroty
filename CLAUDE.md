@@ -92,7 +92,9 @@ A closed return is locked (header, lines, photos, delete) until reopened. Only c
 10 columns) and photos, each once: GET pending → write → POST `.../ack`, which sets `order_lines.exported_at` /
 `line_images.downloaded_at`. Edits after export are not re-sent. Access: a logged-in user's token or the
 `X-API-Key` header (`INTEGRATION_API_KEY`, for unattended jobs). The client is the Google Apps Script in
-`integrations/google-apps-script/`.
+`integrations/google-apps-script/`; its `Config.gs` holds the target spreadsheet id and tab gid, so the
+script can live in one spreadsheet (e.g. a test one) and write into another — which is why the manifest
+asks for the full `spreadsheets` scope, not `spreadsheets.currentonly`.
 
 ## Frontend
 Static multi-page cabinet in `frontend/`, served at `/app` (`app/cabinet.py`): HTML is `no-cache`,
