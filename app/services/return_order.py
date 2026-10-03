@@ -24,6 +24,7 @@ from app.schemas.return_order import (
 )
 from app.services.image_naming import ImageNamer
 from app.services.image_storage import ImageStorage, detect_image_type, upload_file_name
+from app.services.label_printing import print_return_labels
 
 _CLEARABLE_LINE_FIELDS = {"damage_description", "remarks"}
 
@@ -116,8 +117,13 @@ class ReturnOrderService:
 
     async def close_order(self, order_uuid: UUID) -> ReturnOrderOut:
         order = await self._get_order(order_uuid)
-        if order.status != ReturnStatus.CLOSED:
+        newly_closed = order.status != ReturnStatus.CLOSED
+        if newly_closed:
             await self.orders.update_one(order, {"status": ReturnStatus.CLOSED, "closed_at": func.now()})
+        # Finishing a return prints its labels; reopening and closing again prints them anew.
+        with_lines = await self.orders.get_with_lines(order_uuid)
+        if newly_closed and with_lines:
+            await print_return_labels(with_lines)
         return await self._reload(order_uuid)
 
     async def reopen_order(self, order_uuid: UUID) -> ReturnOrderOut:

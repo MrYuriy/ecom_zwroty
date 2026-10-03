@@ -63,6 +63,16 @@ token, so reloading that tab rebuilds the report; nothing is stored or cached (`
 primary key); saving the same day again overwrites it and records who did. `GET/PUT/DELETE /api/work-logs/{day}`
 plus a paged list, all for any logged-in user.
 
+## Zebra labels (closed returns)
+Closing a return POSTs its labels to the cups print server (`CUPS_LABELS_URL`, empty = printing off):
+one record per kind of goods, `{data, oh_number, kind: intact|damaged, lines_info: [{reference, quantity}]}`,
+where `oh_number` is the BO/WMS number (`brak` when missing). `services/label_printing.py` never raises —
+a dead printer must not stop the warehouse, so failures are only logged. The ZPL itself lives in the
+**cups** project (`label/utils.py: generate_return_labels`): 10x10 cm at 203 dpi, 10 rows per label,
+sheets numbered 1/3, 2/3, 3/3 within each kind. An ESP32 polls `/api/label/labels-returns/` and gets every
+label that is not printed yet; `/api/label/labels-returns/reprint/` with `oh_number` queues them again.
+The URL's host must be in the cups `ALLOWED_HOSTS`, otherwise Django answers 400.
+
 ## Line images
 Files live in `UPLOADS_DIR` (`./uploads` mounted at `/data/uploads` in docker; gitignored), named
 `{bo_wms_number or brak}_{trade_reference}_{N}.{ext}` (`services/image_naming.py`). N runs 1..k per

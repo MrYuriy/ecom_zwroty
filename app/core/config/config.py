@@ -3,6 +3,7 @@ from app.core.config.db import DbBaseConfig
 from app.core.config.google import GoogleConfig
 from app.core.config.integration import IntegrationConfig
 from app.core.config.jwt import JwtConfig
+from app.core.config.printing import PrintingConfig
 from app.core.config.storage import StorageConfig
 
 __all__ = ["Settings", "settings"]
@@ -14,6 +15,7 @@ class Settings(BaseConfig):
     storage: StorageConfig = StorageConfig()
     google: GoogleConfig = GoogleConfig()
     integration: IntegrationConfig = IntegrationConfig()
+    printing: PrintingConfig = PrintingConfig()
 
 
 settings = Settings()
